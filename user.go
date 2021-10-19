@@ -1,7 +1,8 @@
 package image
 
 type User struct {
-	Id       int    `json:"-"`
+	ID       int    `json:"-"`
 	Nickname string `json:"nickname"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }

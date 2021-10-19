@@ -19,9 +19,10 @@ func (h *Handler) InitRouters() *mux.Router {
 	r.HandleFunc("/history", HistortHandler)
 
 	r.HandleFunc("/conversion", ConversionHandler)
+
 	return r
 }
 
-func NewHandler(service *service.Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(serv *service.Service) *Handler {
+	return &Handler{service: serv}
 }

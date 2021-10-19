@@ -1,0 +1,108 @@
+openapi: "3.0.2"
+info:
+  title: "Convert images"
+  description: "You can change resolution and convert images."
+  version: "3.0.3"
+  license:
+    name: GNU license
+    url: https://www.gnu.org/licenses/licenses.html#FDL
+  contact:
+    name: Aleskey
+    url: github.com/Dyleme
+    email: aleksei.dyavgo@gmail.com
+servers:
+  - url: https://api.openweathermap.org/data/2.5/
+    description: main server
+paths:
+  /conversion:
+    post:
+      summary: Upload an image to the conversion
+      tags:
+      - Conversion
+      responses:
+        200:
+          description: Successful Upload
+  /history:
+    get:
+      summary: Returns history of operations
+      tags:
+      - History
+      description: "Returns all operations maked by the user"
+      operationId: AllOprations
+      parameters:
+      - name: status
+        in: query
+        description: "**Operations status**. *Example: Processed*. You can tell what opertions do you need: *Processed, Waiting*."
+        schema:
+          type: string
+      responses: 
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                title: Sample
+                type: array
+                items: 
+                  type: object
+                  description: 'Request'
+                  properties: 
+                    originalImage:
+                      $ref: '#/components/schemas/Image'
+                    processedImage:
+                      $ref: '#/components/schemas/Image'
+                    startTime:
+                      type: string
+                      description: Start time
+                    endTime:
+                      type: string
+                      description: End time
+
+        404:
+          $ref: '#/components/responses/DefaultError'
+          
+tags:
+  - name: Conversion
+  - name: History
+                
+                
+components:
+
+  schemas:
+  
+    Image:
+     type: object
+     properties:
+      Type:
+        type: string
+        description: Type of the image
+      URL:
+        type: string
+        description: URL to the image
+      Ratio:
+        $ref: '#/components/schemas/Ratio'
+        
+        
+    Ratio:
+      type: object
+      description: Ratio of the image
+      properties:
+        width:
+          type: integer
+          description: Amount of pixels in wide
+        height:
+          type: integer
+          description: Amount of pixels in height
+              
+  responses:
+    
+    DefaultError:
+       description: Not found response
+       content:
+         text/plain:
+          schema:
+            title: History not found
+            type: string
+            example: Not found
+  
+          
