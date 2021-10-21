@@ -1,0 +1,314 @@
+openapi: "3.0.2"
+info:
+  title: "Convert images"
+  description: "You can change resolution and convert images."
+  version: "3.0.3"
+  license:
+    name: GNU license
+    url: https://www.gnu.org/licenses/licenses.html
+  contact:
+    name: Aleskey
+    url: github.com/Dyleme
+    email: aleksei.dyavgo@gmail.com
+servers:
+  - url: https://api.convert-image.org
+    description: main server
+paths:
+  /conversion:
+    post:
+      summary: Upload an image to the conversion
+      description: "Upload an image to convert it using provided properties"
+      tags:
+       - Conversion
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                CompressionInfo:
+                  type: object
+                  properties:
+                    ratio:
+                      type: number
+                      format: float
+                      default: 1.0
+                      minimum: 0.0
+                      exclusiveMinimum: true
+                      maximum: 1.0
+                      description: Ratio of conversion
+                    newType:
+                      type: string
+                      description: New image type
+                      enum: ["png", "jpeg"]
+                  description: "compression ratio"
+                Image:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: Successful Upload
+          content:
+            application/json:
+              schema:
+                title: Id to the original image
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: id of the uploaded image
+          
+  /conversion/{imageId}:
+    get:
+      summary: Get an image by image id
+      description: "Get an image by it's id. Return image if it's id exists and this user have made this conversion"
+      tags:
+       - Conversion
+      parameters:
+        - in: path
+          name: imageId
+          schema:
+            type: integer
+            minimum: 1
+          required: true
+          description: Numeric ID of the image to get
+      responses:
+        200:
+          description: Succesful recieved image 
+          content:
+            image:
+              schema:
+                type: string
+                format: binary
+        400:
+          $ref: '#/components/responses/WrongResourceIdError'
+        404:
+          $ref: '#/components/responses/DefaultError'
+        403:
+          $ref: '#/components/responses/HaventPermissionsError'
+          
+  /conversion/{conversionId}:
+    delete:
+      summary: Delete an conversion with images by conversion id
+      description: "Delete the conversion by it's id. Also deletes images which were used in this conversion"
+      tags:
+       - Conversion
+      parameters:
+        - in: path
+          name: conversionId
+          schema:
+            type: integer
+            minimum: 1
+          required: true
+          description: Numeric ID of the conversion to delete
+      responses:
+        204:
+          description: Succesful delete conversion
+        400:
+          $ref: '#/components/responses/WrongResourceIdError'
+        404:
+          $ref: '#/components/responses/DefaultError'
+        403:
+          $ref: '#/components/responses/HaventPermissionsError'
+      
+          
+          
+  /history:
+    get:
+      summary: Returns history of operations
+      tags:
+      - History
+      description: "Returns all operations maked by the user"
+      operationId: AllOprations
+      parameters:
+      - name: status
+        in: query
+        description: "You can tell what **Operation status** do you need. Avaivable statuses: *Queued, Processing, Done*."
+        schema:
+          type: string
+          enum: ["queued", "processing", "done"]
+      responses: 
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                title: Images with the their info
+                type: array
+                items: 
+                  type: object
+                  description: 'Request'
+                  properties: 
+                    originalImage:
+                      $ref: '#/components/schemas/Image'
+                    processedImage:
+                      $ref: '#/components/schemas/Image'
+                    status:
+                      type: string
+                      description: Status of processing an image
+                    startTime:
+                      type: string
+                      description: Start time
+                    endTime:
+                      type: string
+                      description: End time
+                    operationId:
+                      type: integer
+                      description: Id of the operation
+
+        404:
+          $ref: '#/components/responses/DefaultError'
+  /auth/sign-up:
+    post:
+      summary: Register user
+      description: Register user by nickname and password.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          description: Successful registration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/userJWT'
+
+        409:
+          $ref: '#/components/responses/AlreadyExistsError'
+        404:
+          $ref: '#/components/responses/DefaultError'
+  /auth/sign-in:
+    post:
+      summary: Sign in user
+      description: Login user by nickname and password.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+              
+      responses:
+        200:
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/userJWT'
+        401:
+          description: Wrong password
+          content:
+           text/plain:
+            schema:
+              title: Wrong password
+              type: string
+              example: Wrong password
+        404:
+          $ref: '#/components/responses/DefaultError'
+          
+  
+tags:
+  - name: Conversion
+  - name: History
+  - name: Auth
+                
+components:
+
+  schemas:
+  
+    Image:
+     type: object
+     properties:
+      URL:
+        type: string
+        description: URL to the image
+      ID:
+        type: integer
+        description: ID of the image
+      info:
+        $ref: '#/components/schemas/ImageInfo'
+    
+    ImageInfo:
+      type: object
+      properties:
+        Type:
+          type: string
+        
+        Resolution:
+          $ref: '#/components/schemas/Resolution'
+        
+    Resolution:
+      type: object
+      description: Resolution of the image
+      properties:
+        width:
+          type: integer
+          description: Amount of pixels in wide
+        height:
+          type: integer
+          description: Amount of pixels in height
+          
+    User:
+      type: object
+      properties: 
+        Nickname:
+          type: string
+          description: Nickname
+        Email:
+          type: string
+          description: Email of the user
+        Password:
+          type: string
+          description: User password to connect to the website
+    userJWT:
+      type: object
+      description: "JWT token"
+      properties:
+        JWT:
+          type: string
+          description: JWT toketn of the user
+        
+  responses:
+  
+    WrongResourceIdError:
+      description: "Cat't find resource's id"
+      content:
+       text/plain:
+        schema:
+          title: Resources id not found
+          type: string
+          example: Not found resource id
+    
+    DefaultError:
+     description: Not found response
+     content:
+       text/plain:
+        schema:
+          title: Page not found
+          type: string
+          example: Not found page
+          
+    HaventPermissionsError:
+      description: Haven't permissions
+      content:
+       text/plain:
+        schema:
+          title: This resource belongs to another user
+          type: string
+          example: This resource belongs to another user
+    
+    AlreadyExistsError:
+      description: This item already exists
+      content:
+       text/plain:
+        schema:
+          title: This item already exists
+          type: string
+          example: Item already exists
+
+          
