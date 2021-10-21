@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/Dyleme/image-coverter"
-	"github.com/Dyleme/image-coverter/pkg/handler"
+	"github.com/Dyleme/image-coverter/pkg/controller"
 	"github.com/Dyleme/image-coverter/pkg/repository"
 	"github.com/Dyleme/image-coverter/pkg/service"
 )
@@ -24,7 +24,7 @@ func main() {
 		Password: os.Getenv("DBPASSWORD"),
 		Host:     os.Getenv("HOST"),
 		Port:     os.Getenv("DBPORT"),
-		DBName:   os.Getenv("DBName"),
+		DBName:   os.Getenv("DBNAME"),
 		SSLMode:  os.Getenv("DBSSLMODE"),
 	})
 	if err != nil {
@@ -33,7 +33,7 @@ func main() {
 
 	repos := repository.NewRepository(db)
 	services := service.NewService(repos)
-	handlers := handler.NewHandler(services)
+	handlers := controller.NewController(services)
 
 	port := os.Getenv("PORT")
 	srv := new(image.Server)

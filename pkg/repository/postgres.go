@@ -6,6 +6,10 @@ import (
 	"log"
 )
 
+const (
+	usersTable = "users"
+)
+
 type DBConfig struct {
 	UserName string
 	Password string
@@ -20,10 +24,15 @@ func NewPostgresDB(conf *DBConfig) (*sql.DB, error) {
 
 	connStr := fmt.Sprintf("user=%v password=%v dbname=%v sslmode=%v",
 		conf.UserName, conf.Password, conf.DBName, conf.SSLMode)
-	db, err := sql.Open("postgres", connStr)
 
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Println(err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return nil, err
 	}
 
 	return db, nil
