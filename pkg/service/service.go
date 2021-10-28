@@ -11,19 +11,20 @@ type Authorization interface {
 	ParseToken(token string) (int, error)
 }
 
-type History interface {
+type Requests interface {
+	GetRequests(userID int) ([]image.Request, error)
 }
 
 type Service struct {
 	repository *repository.Repository
-	History
 	Authorization
+	Requests
 }
 
 func NewService(rep *repository.Repository) *Service {
 	return &Service{
 		repository:    rep,
-		History:       nil,
+		Requests:      NewRequestService(*rep),
 		Authorization: NewAuthSevice(*rep),
 	}
 }

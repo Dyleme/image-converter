@@ -11,16 +11,18 @@ type Authorization interface {
 	GetPasswordAndID(nickname string) ([]byte, int, error)
 }
 
-type History interface {
+type Request interface {
+	GetRequests(id int) ([]image.Request, error)
 }
 
 type Repository struct {
-	History
+	Request
 	Authorization
 }
 
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
+		Request:       NewReqPostgres(db),
 	}
 }

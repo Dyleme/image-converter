@@ -26,7 +26,7 @@ func newErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 	(w).WriteHeader(statusCode)
 }
 
-func jsonResponse(w http.ResponseWriter, v interface{}) {
+func newJSONResponse(w http.ResponseWriter, v interface{}) {
 	js, err := json.Marshal(v)
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())

@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	usersTable = "users"
+	usersTable   = "users"
+	requestTable = "requests"
 )
 
 type DBConfig struct {

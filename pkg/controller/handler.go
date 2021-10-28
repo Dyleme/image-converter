@@ -25,6 +25,7 @@ func (c *Controller) InitRouters() *mux.Router {
 	router.HandleFunc("/auth/login", c.LoginHandler)
 
 	authRouter.HandleFunc("/requests", c.AllRequestsHandler).Methods(http.MethodGet)
+	authRouter.HandleFunc("/requests/image", c.AddRequestHandler).Methods(http.MethodPost)
 
 	authRouter.Use(c.log)
 	authRouter.Use(c.checkJWT)

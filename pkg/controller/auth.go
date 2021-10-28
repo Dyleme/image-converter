@@ -20,7 +20,7 @@ func (c *Controller) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResponse(w, jwtToken)
+	newJSONResponse(w, jwtToken)
 }
 
 func (c *Controller) RegiterHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,5 +37,5 @@ func (c *Controller) RegiterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idStruct := map[string]int{"id": id}
-	jsonResponse(w, idStruct)
+	newJSONResponse(w, idStruct)
 }
