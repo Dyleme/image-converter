@@ -14,12 +14,12 @@ servers:
   - url: https://api.convert-image.org
     description: main server
 paths:
-  /download/image/{id}:
+  /images/{id}/download:
     get:
       summary: Get an image by image id
       description: "Get an image by it's id. Return image if it's id exists and this user have made this conversion"
       tags:
-       - Download
+       - Images
       parameters:
         - in: path
           name: id
@@ -215,7 +215,7 @@ paths:
           
   
 tags:
-  - name: Download
+  - name: Images
   - name: Requests
   - name: Auth
                 
