@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/Dyleme/image-coverter"
@@ -38,4 +39,15 @@ func (c *Controller) RegiterHandler(w http.ResponseWriter, r *http.Request) {
 
 	idStruct := map[string]int{"id": id}
 	newJSONResponse(w, idStruct)
+}
+
+func (c *Controller) getUserFromContext(r *http.Request) (int, error) {
+	ctx := r.Context()
+	userID, ok := ctx.Value(keyUserID).(int)
+
+	if !ok {
+		return 0, fmt.Errorf("can't get user from context")
+	}
+
+	return userID, nil
 }

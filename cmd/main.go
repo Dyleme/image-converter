@@ -11,6 +11,7 @@ import (
 	"github.com/Dyleme/image-coverter/pkg/controller"
 	"github.com/Dyleme/image-coverter/pkg/repository"
 	"github.com/Dyleme/image-coverter/pkg/service"
+	"github.com/Dyleme/image-coverter/pkg/storage"
 )
 
 func main() {
@@ -32,7 +33,8 @@ func main() {
 	}
 
 	repos := repository.NewRepository(db)
-	services := service.NewService(repos)
+	stor := storage.NewStorage()
+	services := service.NewService(repos, stor)
 	handlers := controller.NewController(services)
 
 	port := os.Getenv("PORT")

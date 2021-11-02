@@ -37,7 +37,9 @@ func (c *Controller) checkJWT(h http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(context.Background(), keyUserID, userID)
+		ctx := r.Context()
+
+		ctx = context.WithValue(ctx, keyUserID, userID)
 
 		r = r.WithContext(ctx)
 

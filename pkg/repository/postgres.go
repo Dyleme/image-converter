@@ -9,6 +9,7 @@ import (
 const (
 	usersTable   = "users"
 	requestTable = "requests"
+	imageTable   = "images"
 )
 
 type DBConfig struct {

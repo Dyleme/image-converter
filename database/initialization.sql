@@ -15,11 +15,11 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TYPE operation_status AS ENUM ('queued', 'processing', 'done');
 
-CREATE TYPE image_type AS ENUM ('JPEG', 'PNG');
+CREATE TYPE image_type AS ENUM ('jpeg', 'png');
 
 CREATE TABLE IF NOT EXISTS requests (
   id                  SERIAL UNIQUE PRIMARY KEY,
-  op_status           operation_status NOT NULL,
+  op_status           operation_status NOT NULL DEFAULT 'queued',
   request_time        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   completion_time     TIMESTAMP WITH TIME ZONE,
   original_id         INTEGER NOT NULL,
