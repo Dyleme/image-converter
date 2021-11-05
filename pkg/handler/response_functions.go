@@ -1,4 +1,4 @@
-package controller
+package handler
 
 import (
 	"encoding/json"
@@ -35,4 +35,9 @@ func newJSONResponse(w http.ResponseWriter, v interface{}) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js) //nolint:errcheck // can't appear
+}
+
+func newDownloadFileResponce(w http.ResponseWriter, b []byte) {
+	w.Header().Add("Content-Disposition", "Attachment")
+	w.Write(b) //nolint:errcheck // error can't appear
 }

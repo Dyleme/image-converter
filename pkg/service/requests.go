@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Dyleme/image-coverter"
 	"github.com/Dyleme/image-coverter/pkg/conversion"
+	"github.com/Dyleme/image-coverter/pkg/model"
 	"github.com/Dyleme/image-coverter/pkg/repository"
 	"github.com/Dyleme/image-coverter/pkg/storage"
 
-	im "image"
+	"image"
 )
 
 const (
@@ -29,14 +29,14 @@ const (
 
 type RequestService struct {
 	repo    repository.Request
-	storage storage.Storage
+	storage storage.Interface
 }
 
-func NewRequestService(repo repository.Request, stor storage.Storage) *RequestService {
+func NewRequestService(repo repository.Request, stor storage.Interface) *RequestService {
 	return &RequestService{repo: repo, storage: stor}
 }
 
-func (s *RequestService) GetRequests(userID int) ([]image.Request, error) {
+func (s *RequestService) GetRequests(userID int) ([]model.Request, error) {
 	reqs, err := s.repo.GetRequests(userID)
 
 	if err != nil {
@@ -47,7 +47,7 @@ func (s *RequestService) GetRequests(userID int) ([]image.Request, error) {
 }
 
 func (s *RequestService) AddRequest(userID int, file multipart.File,
-	fileName string, info image.ConversionInfo) (int, error) {
+	fileName string, convInfo model.ConversionInfo) (int, error) {
 	reqTime := time.Now()
 	pointIndex := strings.LastIndex(fileName, ".")
 	oldType := fileName[pointIndex+1:]
@@ -63,7 +63,7 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 	}
 
 	x, y := getResolution(pic)
-	imageInfo := image.Info{
+	imageInfo := model.Info{
 		ResoultionX: x,
 		ResoultionY: y,
 		URL:         url,
@@ -75,33 +75,33 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 		return 0, err
 	}
 
-	req := image.Request{
+	req := model.Request{
 		OpStatus:      "queued",
 		RequestTime:   reqTime,
 		OriginalID:    imageID,
-		Ratio:         info.Ratio,
+		Ratio:         convInfo.Ratio,
 		OriginalType:  oldType,
-		ProcessedType: info.Type,
+		ProcessedType: convInfo.Type,
 	}
 
-	_, err = s.repo.AddRequest(&req, userID)
+	reqID, err := s.repo.AddRequest(&req, userID)
 	if err != nil {
 		return 0, err
 	}
 
-	if info.Ratio != 1 {
-		pic = conversion.Convert(pic, info.Ratio)
+	if convInfo.Ratio != 1 {
+		pic = conversion.Convert(pic, convInfo.Ratio)
 	}
 
-	convFileName := fileName[:pointIndex] + "_conv." + info.Type
+	convFileName := fileName[:pointIndex] + "_conv." + convInfo.Type
 
-	newURL, err := s.UploadImage(pic, convFileName, info.Type, userID)
+	newURL, err := s.UploadImage(pic, convFileName, convInfo.Type, userID)
 	if err != nil {
 		return 0, err
 	}
 
 	newX, newY := getResolution(pic)
-	newImageInfo := image.Info{
+	newImageInfo := model.Info{
 		ResoultionX: newX,
 		ResoultionY: newY,
 		URL:         newURL,
@@ -113,10 +113,22 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 		return 0, err
 	}
 
-	return newImageID, nil
+	err = s.repo.AddProcessedImageIDToRequest(reqID, newImageID)
+	if err != nil {
+		return 0, err
+	}
+
+	completionTime := time.Now()
+
+	err = s.repo.AddProcessedTimeToRequest(reqID, completionTime)
+	if err != nil {
+		return 0, err
+	}
+
+	return reqID, nil
 }
 
-func decodeImage(r io.Reader, oldType string) (im.Image, error) {
+func decodeImage(r io.Reader, oldType string) (image.Image, error) {
 	switch oldType {
 	case pngType:
 		return png.Decode(r)
@@ -127,11 +139,11 @@ func decodeImage(r io.Reader, oldType string) (im.Image, error) {
 	}
 }
 
-func getResolution(i im.Image) (x, y int) {
+func getResolution(i image.Image) (x, y int) {
 	return i.Bounds().Dx(), i.Bounds().Dy()
 }
 
-func encodeImage(i im.Image, fileType string) ([]byte, error) {
+func encodeImage(i image.Image, fileType string) ([]byte, error) {
 	bf := new(bytes.Buffer)
 
 	switch fileType {
@@ -150,7 +162,7 @@ func encodeImage(i im.Image, fileType string) ([]byte, error) {
 	return bf.Bytes(), nil
 }
 
-func (s *RequestService) GetRequest(userID, reqID int) (*image.Request, error) {
+func (s *RequestService) GetRequest(userID, reqID int) (*model.Request, error) {
 	req, err := s.repo.GetRequest(userID, reqID)
 
 	if err != nil {
@@ -160,7 +172,37 @@ func (s *RequestService) GetRequest(userID, reqID int) (*image.Request, error) {
 	return req, nil
 }
 
-func (s *RequestService) UploadImage(i im.Image, fileName, imageType string, userID int) (string, error) {
+func (s *RequestService) DeleteRequest(userID, reqID int) error {
+	im1ID, im2ID, err := s.repo.DeleteRequest(userID, reqID)
+
+	if err != nil {
+		return err
+	}
+
+	url1, err := s.repo.DeleteImage(userID, im1ID)
+	if err != nil {
+		return err
+	}
+
+	url2, err := s.repo.DeleteImage(userID, im2ID)
+	if err != nil {
+		return err
+	}
+
+	err = s.storage.DeleteFile(url1)
+	if err != nil {
+		return err
+	}
+
+	err = s.storage.DeleteFile(url2)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (s *RequestService) UploadImage(i image.Image, fileName, imageType string, userID int) (string, error) {
 	bf, err := encodeImage(i, imageType)
 	if err != nil {
 		return "", err

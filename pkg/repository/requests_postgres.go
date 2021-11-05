@@ -3,8 +3,9 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
-	"github.com/Dyleme/image-coverter"
+	"github.com/Dyleme/image-coverter/pkg/model"
 )
 
 type ReqPostgres struct {
@@ -15,7 +16,7 @@ func NewReqPostgres(db *sql.DB) *ReqPostgres {
 	return &ReqPostgres{db: db}
 }
 
-func (r *ReqPostgres) GetRequests(userID int) ([]image.Request, error) {
+func (r *ReqPostgres) GetRequests(userID int) ([]model.Request, error) {
 	query := fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
 	 processed_id, ratio, original_type, processed_type FROM %s WHERE user_id = $1`, requestTable)
 
@@ -26,12 +27,12 @@ func (r *ReqPostgres) GetRequests(userID int) ([]image.Request, error) {
 	}
 	defer rows.Close()
 
-	var reqs []image.Request
+	var reqs []model.Request
 
 	fmt.Println(userID)
 
 	for rows.Next() {
-		req := new(image.Request)
+		req := new(model.Request)
 
 		var complTime sql.NullTime
 
@@ -59,13 +60,13 @@ func (r *ReqPostgres) GetRequests(userID int) ([]image.Request, error) {
 	return reqs, nil
 }
 
-func (r *ReqPostgres) GetRequest(userID, reqID int) (*image.Request, error) {
+func (r *ReqPostgres) GetRequest(userID, reqID int) (*model.Request, error) {
 	query := fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
 	 processed_id, ratio, original_type, processed_type FROM %s WHERE id = $1 and user_id = $2`, requestTable)
 
 	row := r.db.QueryRow(query, reqID, userID)
 
-	var req image.Request
+	var req model.Request
 
 	var complTime sql.NullTime
 
@@ -90,7 +91,7 @@ func (r *ReqPostgres) GetRequest(userID, reqID int) (*image.Request, error) {
 	return &req, nil
 }
 
-func (r *ReqPostgres) AddRequest(req *image.Request, userID int) (int, error) {
+func (r *ReqPostgres) AddRequest(req *model.Request, userID int) (int, error) {
 	query := fmt.Sprintf(`INSERT INTO %s (op_status, request_time, original_id, 
 		user_id, ratio, original_type, processed_type)
 		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`, requestTable)
@@ -105,7 +106,31 @@ func (r *ReqPostgres) AddRequest(req *image.Request, userID int) (int, error) {
 	return reqID, nil
 }
 
-func (r *ReqPostgres) AddImage(userID int, imageInfo image.Info) (int, error) {
+func (r *ReqPostgres) AddProcessedImageIDToRequest(reqID, imageID int) error {
+	query := fmt.Sprintf(`UPDATE %s SET processed_id = $1 WHERE id = $2 RETURNING id;`, requestTable)
+	row := r.db.QueryRow(query, imageID, reqID)
+
+	var id int
+	if err := row.Scan(&id); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *ReqPostgres) AddProcessedTimeToRequest(reqID int, t time.Time) error {
+	query := fmt.Sprintf(`UPDATE %s SET completion_time = $1 WHERE id = $2 RETURNING id;`, requestTable)
+	row := r.db.QueryRow(query, t, reqID)
+
+	var id int
+	if err := row.Scan(&id); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *ReqPostgres) AddImage(userID int, imageInfo model.Info) (int, error) {
 	query := fmt.Sprintf(`INSERT INTO %s (resoolution_x, resoolution_y, im_type, image_url, user_id)
 		VALUES ($1, $2, $3, $4, $5) RETURNING id;`, imageTable)
 	row := r.db.QueryRow(query, imageInfo.ResoultionX, imageInfo.ResoultionY,
@@ -117,4 +142,34 @@ func (r *ReqPostgres) AddImage(userID int, imageInfo image.Info) (int, error) {
 	}
 
 	return imageID, nil
+}
+
+func (r *ReqPostgres) DeleteRequest(userID, reqID int) (im1id, im2id int, err error) {
+	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING original_id, processed_id`, requestTable)
+
+	row := r.db.QueryRow(query, userID, reqID)
+
+	err = row.Scan(&im1id, &im2id)
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return im1id, im2id, nil
+}
+
+func (r *ReqPostgres) DeleteImage(userID, imageID int) (string, error) {
+	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING image_url`, imageTable)
+
+	row := r.db.QueryRow(query, userID, imageID)
+
+	var url string
+
+	err := row.Scan(&url)
+
+	if err != nil {
+		return "", err
+	}
+
+	return url, nil
 }

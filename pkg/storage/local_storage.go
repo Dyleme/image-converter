@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"os"
 	"strconv"
 	"strings"
@@ -14,9 +15,20 @@ func NewLocalStorage(path string) *LocalStorage {
 	return &LocalStorage{path: path}
 }
 
-func (s *LocalStorage) GetFile(userID int, fileName string) (*os.File, error) {
-	fullPath := s.createPath(userID, fileName)
-	return os.Open(fullPath)
+func (s *LocalStorage) GetFile(fullPath string) ([]byte, error) {
+	file, err := os.Open(fullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var bf bytes.Buffer
+
+	_, err = bf.ReadFrom(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return bf.Bytes(), err
 }
 
 func (s *LocalStorage) UploadFile(userID int, fileName string, data []byte) (string, error) {
@@ -45,11 +57,6 @@ func (s *LocalStorage) UploadFile(userID int, fileName string, data []byte) (str
 	return fullPath, err
 }
 
-func (s *LocalStorage) DeleteFile(userID int, fileName string) error {
-	fullPath := s.createPath(userID, fileName)
-	return os.Remove(fullPath)
-}
-
 func (s *LocalStorage) createPath(userID int, fileName string) string {
 	pointIndex := strings.LastIndex(fileName, ".")
 	return s.path + strconv.Itoa(userID) + "_" + fileName[:pointIndex] + "_1" + fileName[pointIndex:]
@@ -67,4 +74,8 @@ func (s *LocalStorage) increaseIndex(path string) (string, error) {
 	path = path[:firstUnder+1] + strconv.Itoa(numnber) + path[secondUnder:]
 
 	return path, nil
+}
+
+func (s *LocalStorage) DeleteFile(fullPath string) error {
+	return os.Remove(fullPath)
 }

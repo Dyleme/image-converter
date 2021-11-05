@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS images (
   resoolution_x    INTEGER NOT NULL,
   resoolution_y    INTEGER NOT NULL,
   im_type          image_type NOT NULL,
-  image_url        VARCHAR(50) NOT NULL,
+  image_url        VARCHAR(250) NOT NULL,
   user_id          INTEGER NOT NULL,
   request_id       INTEGER 
 );

@@ -1,19 +1,23 @@
 package storage
 
-import "os"
+import "log"
 
-type FileStorage interface {
-	GetFile(int, string) (*os.File, error)
-	UploadFile(int, string, []byte) (string, error)
-	DeleteFile(int, string) error
+type Interface interface {
+	GetFile(path string) ([]byte, error)
+	UploadFile(userID int, fileName string, data []byte) (string, error)
+	DeleteFile(path string) error
 }
 
 type Storage struct {
-	FileStorage
+	Interface
 }
 
 func NewStorage() *Storage {
-	return &Storage{
-		FileStorage: NewLocalStorage("D:\\"),
+	stor, err := NewMinioStorage("localhost:9000",
+		"AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", false)
+	if err != nil {
+		log.Fatalf("can't initialize storage: %v", err)
 	}
+
+	return &Storage{Interface: stor}
 }

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Dyleme/image-coverter"
+	"github.com/Dyleme/image-coverter/pkg/model"
 	"github.com/Dyleme/image-coverter/pkg/repository"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
@@ -21,11 +21,11 @@ type AuthService struct {
 	repo repository.Authorization
 }
 
-func NewAuthSevice(repo repository.Repository) *AuthService {
+func NewAuthSevice(repo repository.Authorization) *AuthService {
 	return &AuthService{repo: repo}
 }
 
-func (s *AuthService) CreateUser(user image.User) (int, error) {
+func (s *AuthService) CreateUser(user model.User) (int, error) {
 	user.Password = generatePasswordHash(user.Password)
 	return s.repo.CreateUser(user)
 }
@@ -37,7 +37,7 @@ type tokenClaims struct {
 	UserID int `json:"UserID"`
 }
 
-func (s *AuthService) ValidateUser(user image.User) (string, error) {
+func (s *AuthService) ValidateUser(user model.User) (string, error) {
 	hash, id, err := s.repo.GetPasswordAndID(user.Nickname)
 	if err != nil {
 		return "", ErrWrongPassword

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/Dyleme/image-coverter"
+	"github.com/Dyleme/image-coverter/pkg/model"
 )
 
 type AuthPostgres struct {
@@ -15,7 +15,7 @@ func NewAuthPostgres(db *sql.DB) *AuthPostgres {
 	return &AuthPostgres{db: db}
 }
 
-func (r *AuthPostgres) CreateUser(user image.User) (int, error) {
+func (r *AuthPostgres) CreateUser(user model.User) (int, error) {
 	query := fmt.Sprintf("INSERT INTO %s (nickname, email, password_hash) VALUES ($1, $2, $3) RETURNING id", usersTable)
 	row := r.db.QueryRow(query, user.Nickname, user.Email, user.Password)
 

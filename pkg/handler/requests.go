@@ -1,22 +1,22 @@
-package controller
+package handler
 
 import (
 	"encoding/json"
 	"net/http"
 	"strconv"
 
-	im "github.com/Dyleme/image-coverter"
+	"github.com/Dyleme/image-coverter/pkg/model"
 	"github.com/gorilla/mux"
 )
 
-func (c *Controller) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := c.getUserFromContext(r)
+func (s *Server) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := s.getUserFromContext(r)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	reqs, err := c.service.GetRequests(userID)
+	reqs, err := s.service.GetRequests(userID)
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -25,8 +25,8 @@ func (c *Controller) AllRequestsHandler(w http.ResponseWriter, r *http.Request) 
 	newJSONResponse(w, reqs)
 }
 
-func (c *Controller) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := c.getUserFromContext(r)
+func (s *Server) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := s.getUserFromContext(r)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -41,7 +41,7 @@ func (c *Controller) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	info := r.FormValue("CompressionInfo")
 
-	var sendInfo im.ConversionInfo
+	var sendInfo model.ConversionInfo
 
 	err = json.Unmarshal([]byte(info), &sendInfo)
 	if err != nil {
@@ -57,7 +57,7 @@ func (c *Controller) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageID, err := c.service.AddRequest(userID, file, header.Filename, sendInfo)
+	imageID, err := s.service.AddRequest(userID, file, header.Filename, sendInfo)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -72,8 +72,8 @@ func (c *Controller) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 	newJSONResponse(w, m)
 }
 
-func (c *Controller) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := c.getUserFromContext(r)
+func (s *Server) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := s.getUserFromContext(r)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -94,7 +94,7 @@ func (c *Controller) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request, err := c.service.GetRequest(userID, reqID)
+	request, err := s.service.GetRequest(userID, reqID)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -102,4 +102,36 @@ func (c *Controller) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newJSONResponse(w, request)
+}
+
+func (s *Server) DeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := s.getUserFromContext(r)
+	if err != nil {
+		newErrorResponse(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	vars := mux.Vars(r)
+	strReqID, ok := vars["reqID"]
+
+	if !ok {
+		newErrorResponse(w, http.StatusBadRequest, "id parameter is missing")
+		return
+	}
+
+	reqID, err := strconv.Atoi(strReqID)
+
+	if err != nil {
+		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	err = s.service.DeleteRequest(userID, reqID)
+
+	if err != nil {
+		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	newJSONResponse(w, reqID)
 }
