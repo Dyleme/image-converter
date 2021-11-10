@@ -39,7 +39,7 @@ type Repository struct {
 	Download
 }
 
-func NewRepository(db *sql.DB) *Repository {
+func NewRepository(db *sql.DB) Interface {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
 		Request:       NewReqPostgres(db),
