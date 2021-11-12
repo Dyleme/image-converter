@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -15,7 +16,7 @@ import (
 )
 
 func main() {
-	err := godotenv.Load("C:\\Users\\aleks\\go stag\\image-converter\\.env")
+	err := godotenv.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -23,7 +24,7 @@ func main() {
 	db, err := repository.NewPostgresDB(&repository.DBConfig{
 		UserName: os.Getenv("DBUSERNAME"),
 		Password: os.Getenv("DBPASSWORD"),
-		Host:     os.Getenv("HOST"),
+		Host:     os.Getenv("DBHOST"),
 		Port:     os.Getenv("DBPORT"),
 		DBName:   os.Getenv("DBNAME"),
 		SSLMode:  os.Getenv("DBSSLMODE"),
@@ -33,7 +34,23 @@ func main() {
 	}
 
 	repos := repository.NewRepository(db)
-	stor := storage.NewStorage()
+
+	useMinioSSL, err := strconv.ParseBool(os.Getenv("MNUSESSL"))
+	if err != nil {
+		log.Fatalf("can't convert string to bool; %s", err)
+	}
+
+	stor, err := storage.NewMinioStorage(
+		os.Getenv("MNHOST")+":"+os.Getenv("MNPORT"),
+		os.Getenv("MNACCESSKEYID"),
+		os.Getenv("MNSECRETACCESSKEY"),
+		useMinioSSL,
+	)
+
+	if err != nil {
+		log.Fatalf("failed to initialize storage: %s", err)
+	}
+
 	services := service.NewService(repos, stor)
 	handlers := handler.NewController(services)
 

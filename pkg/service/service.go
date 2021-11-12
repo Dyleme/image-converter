@@ -37,7 +37,7 @@ type Service struct {
 	Download
 }
 
-func NewService(rep repository.Interface, stor storage.Interface) *Service {
+func NewService(rep repository.Interface, stor storage.Interface) Interface {
 	return &Service{
 		Requests:      NewRequestService(rep, stor),
 		Authorization: NewAuthSevice(rep),

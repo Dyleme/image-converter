@@ -59,7 +59,7 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 
 	url, err := s.UploadImage(pic, fileName, oldType, userID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("upload: %w", err)
 	}
 
 	x, y := getResolution(pic)
@@ -72,7 +72,7 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 
 	imageID, err := s.repo.AddImage(userID, imageInfo)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("repo add image: %w", err)
 	}
 
 	req := model.Request{
@@ -86,7 +86,7 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 
 	reqID, err := s.repo.AddRequest(&req, userID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("repo add request: %w", err)
 	}
 
 	if convInfo.Ratio != 1 {
@@ -97,7 +97,7 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 
 	newURL, err := s.UploadImage(pic, convFileName, convInfo.Type, userID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("upload: %w", err)
 	}
 
 	newX, newY := getResolution(pic)
@@ -110,19 +110,19 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 
 	newImageID, err := s.repo.AddImage(userID, newImageInfo)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("repo add image: %w", err)
 	}
 
 	err = s.repo.AddProcessedImageIDToRequest(reqID, newImageID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("repo update image in request: %w", err)
 	}
 
 	completionTime := time.Now()
 
 	err = s.repo.AddProcessedTimeToRequest(reqID, completionTime)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("repo update time in request: %w", err)
 	}
 
 	return reqID, nil

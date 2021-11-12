@@ -3,6 +3,9 @@ package storage
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/minio/minio-go"
 )
@@ -13,7 +16,7 @@ type MinioStorage struct {
 	client minio.Client
 }
 
-func NewMinioStorage(endpoint, accessKeyID, secretAccessKey string, useSSL bool) (*MinioStorage, error) {
+func NewMinioStorage(endpoint, accessKeyID, secretAccessKey string, useSSL bool) (Interface, error) {
 	cl, err := minio.New(endpoint, accessKeyID, secretAccessKey, useSSL)
 	if err != nil {
 		return nil, err
@@ -64,6 +67,23 @@ func (m *MinioStorage) UploadFile(userID int, fileName string, data []byte) (str
 	var bf bytes.Buffer
 
 	bf.Write(data)
+
+	fileName = m.createPath(userID, fileName)
+
+	for {
+		file, _ := m.client.GetObject("images", fileName, minio.GetObjectOptions{})
+		if _, err = file.Stat(); err == nil {
+			fileName, err = m.increaseIndex(fileName)
+			if err != nil {
+				return "", fmt.Errorf("minio naming: %w", err)
+			}
+
+			continue
+		}
+
+		break
+	}
+
 	_, err = m.client.PutObject("images", fileName, &bf, int64(bf.Len()), minio.PutObjectOptions{})
 
 	if err != nil {
@@ -86,4 +106,23 @@ func (m *MinioStorage) DeleteFile(path string) error {
 	err = m.client.RemoveObject("images", path)
 
 	return err
+}
+
+func (m *MinioStorage) createPath(userID int, fileName string) string {
+	pointIndex := strings.LastIndex(fileName, ".")
+	return strconv.Itoa(userID) + "_" + fileName[:pointIndex] + "(1)" + fileName[pointIndex:]
+}
+
+func (m *MinioStorage) increaseIndex(path string) (string, error) {
+	openBrack := strings.LastIndex(path, "(")
+	closeBrack := strings.LastIndex(path, ")")
+	numnber, err := strconv.Atoi(path[openBrack+1 : closeBrack])
+
+	if err != nil {
+		return "", err
+	}
+	numnber++
+	path = path[:openBrack+1] + strconv.Itoa(numnber) + path[closeBrack:]
+
+	return path, nil
 }
