@@ -23,13 +23,11 @@ func (r *ReqPostgres) GetRequests(userID int) ([]model.Request, error) {
 	rows, err := r.db.Query(query, userID)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("repo: %w", err)
 	}
 	defer rows.Close()
 
 	var reqs []model.Request
-
-	fmt.Println(userID)
 
 	for rows.Next() {
 		req := new(model.Request)
@@ -43,7 +41,7 @@ func (r *ReqPostgres) GetRequests(userID int) ([]model.Request, error) {
 			&req.OriginalType, &req.ProcessedType)
 
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("repo: %w", err)
 		}
 
 		if complTime.Valid {
@@ -77,7 +75,7 @@ func (r *ReqPostgres) GetRequest(userID, reqID int) (*model.Request, error) {
 		&req.OriginalType, &req.ProcessedType)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("repo: %w", err)
 	}
 
 	if complTime.Valid {
@@ -100,7 +98,7 @@ func (r *ReqPostgres) AddRequest(req *model.Request, userID int) (int, error) {
 
 	var reqID int
 	if err := row.Scan(&reqID); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("repo: %w", err)
 	}
 
 	return reqID, nil
@@ -112,7 +110,7 @@ func (r *ReqPostgres) AddProcessedImageIDToRequest(reqID, imageID int) error {
 
 	var id int
 	if err := row.Scan(&id); err != nil {
-		return err
+		return fmt.Errorf("repo: %w", err)
 	}
 
 	return nil
@@ -124,7 +122,7 @@ func (r *ReqPostgres) AddProcessedTimeToRequest(reqID int, t time.Time) error {
 
 	var id int
 	if err := row.Scan(&id); err != nil {
-		return err
+		return fmt.Errorf("repo: %w", err)
 	}
 
 	return nil
@@ -138,7 +136,7 @@ func (r *ReqPostgres) AddImage(userID int, imageInfo model.Info) (int, error) {
 
 	var imageID int
 	if err := row.Scan(&imageID); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("repo: %w", err)
 	}
 
 	return imageID, nil
@@ -152,7 +150,7 @@ func (r *ReqPostgres) DeleteRequest(userID, reqID int) (im1id, im2id int, err er
 	err = row.Scan(&im1id, &im2id)
 
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("repo: %w", err)
 	}
 
 	return im1id, im2id, nil
@@ -168,7 +166,7 @@ func (r *ReqPostgres) DeleteImage(userID, imageID int) (string, error) {
 	err := row.Scan(&url)
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("repo: %w", err)
 	}
 
 	return url, nil

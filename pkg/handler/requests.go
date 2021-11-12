@@ -9,14 +9,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (s *Server) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := s.getUserFromContext(r)
+func (h *Handler) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserFromContext(r)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	reqs, err := s.service.GetRequests(userID)
+	reqs, err := h.service.GetRequests(userID)
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -25,8 +25,8 @@ func (s *Server) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	newJSONResponse(w, reqs)
 }
 
-func (s *Server) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := s.getUserFromContext(r)
+func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserFromContext(r)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -57,7 +57,7 @@ func (s *Server) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageID, err := s.service.AddRequest(userID, file, header.Filename, sendInfo)
+	imageID, err := h.service.AddRequest(userID, file, header.Filename, sendInfo)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -72,8 +72,8 @@ func (s *Server) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 	newJSONResponse(w, m)
 }
 
-func (s *Server) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := s.getUserFromContext(r)
+func (h *Handler) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserFromContext(r)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -94,7 +94,7 @@ func (s *Server) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request, err := s.service.GetRequest(userID, reqID)
+	request, err := h.service.GetRequest(userID, reqID)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -104,8 +104,8 @@ func (s *Server) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 	newJSONResponse(w, request)
 }
 
-func (s *Server) DeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := s.getUserFromContext(r)
+func (h *Handler) DeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserFromContext(r)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -126,7 +126,7 @@ func (s *Server) DeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.service.DeleteRequest(userID, reqID)
+	err = h.service.DeleteRequest(userID, reqID)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())

@@ -52,7 +52,7 @@ func main() {
 	}
 
 	services := service.NewService(repos, stor)
-	handlers := handler.NewController(services)
+	handlers := handler.NewServer(services)
 
 	port := os.Getenv("PORT")
 	srv := new(image.Server)

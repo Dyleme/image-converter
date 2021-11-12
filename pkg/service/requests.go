@@ -13,7 +13,6 @@ import (
 	"github.com/Dyleme/image-coverter/pkg/conversion"
 	"github.com/Dyleme/image-coverter/pkg/model"
 	"github.com/Dyleme/image-coverter/pkg/repository"
-	"github.com/Dyleme/image-coverter/pkg/storage"
 
 	"image"
 )
@@ -29,10 +28,10 @@ const (
 
 type RequestService struct {
 	repo    repository.Request
-	storage storage.Interface
+	storage Storager
 }
 
-func NewRequestService(repo repository.Request, stor storage.Interface) *RequestService {
+func NewRequestService(repo repository.Request, stor Storager) *RequestService {
 	return &RequestService{repo: repo, storage: stor}
 }
 

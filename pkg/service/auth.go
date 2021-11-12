@@ -30,7 +30,19 @@ func (s *AuthService) CreateUser(user model.User) (int, error) {
 	return s.repo.CreateUser(user)
 }
 
-var ErrWrongPassword = fmt.Errorf("wrong password")
+var ErrWrongPassword = errors.New("wrong password")
+
+var ErrTokenClaimsInvalidType = errors.New("token claims are not of the type MapClaims")
+
+type ErrUnexpectedSingingMethod struct {
+	method interface{}
+}
+
+// v *ErrUnexpectedSingingMethod
+
+func (err ErrUnexpectedSingingMethod) Error() string {
+	return fmt.Sprintf("unexpected singing method: %v", err.method)
+}
 
 type tokenClaims struct {
 	jwt.StandardClaims
@@ -61,7 +73,7 @@ func (s *AuthService) ValidateUser(user model.User) (string, error) {
 func (s *AuthService) ParseToken(tokenString string) (int, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return 0, fmt.Errorf("unexpected siginig method: %v", t.Header["alg"])
+			return 0, ErrUnexpectedSingingMethod{t.Header["alg"]}
 		}
 
 		return []byte(signedKey), nil
@@ -75,13 +87,13 @@ func (s *AuthService) ParseToken(tokenString string) (int, error) {
 	if ok && token.Valid {
 		userID, err := strconv.Atoi(fmt.Sprintf("%.f", claims["UserID"]))
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("parse token: %w", err)
 		}
 
 		return userID, nil
 	}
 
-	return 0, errors.New("token claims are not of the type *tokenClaims")
+	return 0, ErrTokenClaimsInvalidType
 }
 
 func generatePasswordHash(password string) string {

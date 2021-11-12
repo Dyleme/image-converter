@@ -9,15 +9,19 @@ import (
 	"time"
 )
 
-type key int
+type key string
 
 const (
 	AuthorizationHeader = "Authorization"
 
-	keyUserID key = iota
+	keyUserID key = "keyUserID"
 )
 
-func (s *Server) checkJWT(h http.Handler) http.Handler {
+const (
+	BearerToken = "Bearer"
+)
+
+func (h *Handler) checkJWT(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader, exist := r.Header[AuthorizationHeader]
 		if !exist {
@@ -26,13 +30,14 @@ func (s *Server) checkJWT(h http.Handler) http.Handler {
 		}
 
 		headerParts := strings.Split(authHeader[0], " ")
+		log.Println(headerParts[0])
 
 		if len(headerParts) != 2 { //nolint:gomnd // 2 is amount of argumetns that should have auth
 			newErrorResponse(w, http.StatusUnauthorized, "invalid auth header")
 			return
 		}
 
-		userID, err := s.service.ParseToken(headerParts[1])
+		userID, err := h.service.ParseToken(headerParts[1])
 		if err != nil {
 			newErrorResponse(w, http.StatusUnauthorized, err.Error())
 			return
@@ -44,19 +49,19 @@ func (s *Server) checkJWT(h http.Handler) http.Handler {
 
 		r = r.WithContext(ctx)
 
-		h.ServeHTTP(w, r)
+		handler.ServeHTTP(w, r)
 	})
 }
 
-func (s *Server) log(h http.Handler) http.Handler {
+func logging(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		begin := time.Now()
-		h.ServeHTTP(w, r)
-		log.Printf("time for answer : %v", time.Since(begin))
+		handler.ServeHTTP(w, r)
+		log.Printf("request %v method %v time for answer : %v", r.URL.Path, r.Method, time.Since(begin))
 	})
 }
 
-func (s *Server) getUserFromContext(r *http.Request) (int, error) {
+func getUserFromContext(r *http.Request) (int, error) {
 	ctx := r.Context()
 	userID, ok := ctx.Value(keyUserID).(int)
 

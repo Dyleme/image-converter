@@ -5,7 +5,6 @@ import (
 
 	"github.com/Dyleme/image-coverter/pkg/model"
 	"github.com/Dyleme/image-coverter/pkg/repository"
-	"github.com/Dyleme/image-coverter/pkg/storage"
 )
 
 type Authorization interface {
@@ -37,7 +36,13 @@ type Service struct {
 	Download
 }
 
-func NewService(rep repository.Interface, stor storage.Interface) Interface {
+type Storager interface {
+	GetFile(path string) ([]byte, error)
+	UploadFile(userID int, fileName string, data []byte) (string, error)
+	DeleteFile(path string) error
+}
+
+func NewService(rep repository.Interface, stor Storager) *Service {
 	return &Service{
 		Requests:      NewRequestService(rep, stor),
 		Authorization: NewAuthSevice(rep),

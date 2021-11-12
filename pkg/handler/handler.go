@@ -7,31 +7,31 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Server struct {
+type Handler struct {
 	service service.Interface
 }
 
-func NewController(serv service.Interface) *Server {
-	return &Server{service: serv}
+func NewServer(serv service.Interface) *Handler {
+	return &Handler{service: serv}
 }
 
-func (s *Server) InitRouters() *mux.Router {
+func (h *Handler) InitRouters() *mux.Router {
 	router := mux.NewRouter()
 
 	authRouter := router.NewRoute().Subrouter()
 
-	router.HandleFunc("/auth/register", s.RegiterHandler).Methods(http.MethodPost)
-	router.HandleFunc("/auth/login", s.LoginHandler)
+	router.HandleFunc("/auth/register", h.RegiterHandler).Methods(http.MethodPost)
+	router.HandleFunc("/auth/login", h.LoginHandler)
 
-	authRouter.HandleFunc("/requests", s.AllRequestsHandler).Methods(http.MethodGet)
-	authRouter.HandleFunc("/requests/image", s.AddRequestHandler).Methods(http.MethodPost)
-	authRouter.HandleFunc("/requests/{reqID}", s.GetRequestHandler).Methods(http.MethodGet)
-	authRouter.HandleFunc("/requests/{reqID}", s.DeleteRequestHandler).Methods(http.MethodDelete)
+	authRouter.HandleFunc("/requests", h.AllRequestsHandler).Methods(http.MethodGet)
+	authRouter.HandleFunc("/requests/image", h.AddRequestHandler).Methods(http.MethodPost)
+	authRouter.HandleFunc("/requests/{reqID}", h.GetRequestHandler).Methods(http.MethodGet)
+	authRouter.HandleFunc("/requests/{reqID}", h.DeleteRequestHandler).Methods(http.MethodDelete)
 
-	authRouter.HandleFunc("/download/image/{id}", s.DownloadImageHandler).Methods(http.MethodGet)
+	authRouter.HandleFunc("/download/image/{id}", h.DownloadImageHandler).Methods(http.MethodGet)
 
-	router.Use(s.log)
-	authRouter.Use(s.checkJWT)
+	router.Use(logging)
+	authRouter.Use(h.checkJWT)
 
 	return router
 }

@@ -23,7 +23,7 @@ func (d *DownloadPostgres) GetImageURL(userID, imageID int) (string, error) {
 	err := row.Scan(&urlImage)
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("repo: %w", err)
 	}
 
 	return urlImage, nil

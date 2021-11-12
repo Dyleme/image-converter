@@ -21,7 +21,7 @@ func (r *AuthPostgres) CreateUser(user model.User) (int, error) {
 
 	var id int
 	if err := row.Scan(&id); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("repo: %w", err)
 	}
 
 	return id, nil
@@ -32,11 +32,11 @@ func (r *AuthPostgres) GetPasswordAndID(nickname string) (hash []byte, userID in
 	row := r.db.QueryRow(query, nickname)
 
 	if row == nil {
-		return nil, 0, row.Err()
+		return nil, 0, fmt.Errorf("repo: %w", err)
 	}
 
 	if err := row.Scan(&hash, &userID); err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("repo: %w", err)
 	}
 
 	return hash, userID, nil
