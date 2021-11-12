@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Dyleme/image-coverter/pkg/repository"
@@ -15,14 +16,14 @@ func NewDownloadSerivce(repo repository.Download, stor Storager) *DownloadServic
 	return &DownloadService{repo: repo, stor: stor}
 }
 
-func (s *DownloadService) DownloadImage(userID, imageID int) ([]byte, error) {
-	imageURL, err := s.repo.GetImageURL(userID, imageID)
+func (s *DownloadService) DownloadImage(ctx context.Context, userID, imageID int) ([]byte, error) {
+	imageURL, err := s.repo.GetImageURL(ctx, userID, imageID)
 
 	if err != nil {
 		return nil, fmt.Errorf("download image: %w", err)
 	}
 
-	fileBytes, err := s.stor.GetFile(imageURL)
+	fileBytes, err := s.stor.GetFile(ctx, imageURL)
 
 	if err != nil {
 		return nil, fmt.Errorf("download image: %w", err)

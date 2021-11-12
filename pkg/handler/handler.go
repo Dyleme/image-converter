@@ -32,6 +32,7 @@ func (h *Handler) InitRouters() *mux.Router {
 
 	router.Use(logging)
 	authRouter.Use(h.checkJWT)
+	router.Use(addTimeoutForResponse)
 
 	return router
 }

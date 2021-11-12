@@ -1,4 +1,4 @@
-FROM golang:latest as builder
+FROM golang:1.17 as builder
 WORKDIR /app
 COPY go.mod .
 COPY go.sum .
@@ -7,7 +7,7 @@ COPY . .
 RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/main.go
 
-FROM alpine:latest
+FROM alpine:3.14.2
 WORKDIR /app
 COPY --from=builder ["/app/main", "/app"]
 COPY ["./.env", "/app"]

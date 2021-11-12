@@ -10,13 +10,15 @@ import (
 )
 
 func (h *Handler) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := getUserFromContext(r)
+	ctx := r.Context()
+
+	userID, err := getUserFromContext(ctx)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	reqs, err := h.service.GetRequests(userID)
+	reqs, err := h.service.GetRequests(ctx, userID)
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -26,7 +28,9 @@ func (h *Handler) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := getUserFromContext(r)
+	ctx := r.Context()
+
+	userID, err := getUserFromContext(ctx)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -57,7 +61,7 @@ func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageID, err := h.service.AddRequest(userID, file, header.Filename, sendInfo)
+	imageID, err := h.service.AddRequest(ctx, userID, file, header.Filename, sendInfo)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -65,7 +69,7 @@ func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m := struct {
-		ImageID int `json:"imageID"`
+		ImageID int `json:"requestID"`
 	}{
 		ImageID: imageID,
 	}
@@ -73,7 +77,9 @@ func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := getUserFromContext(r)
+	ctx := r.Context()
+
+	userID, err := getUserFromContext(ctx)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -94,7 +100,7 @@ func (h *Handler) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request, err := h.service.GetRequest(userID, reqID)
+	request, err := h.service.GetRequest(ctx, userID, reqID)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -105,7 +111,9 @@ func (h *Handler) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := getUserFromContext(r)
+	ctx := r.Context()
+
+	userID, err := getUserFromContext(r.Context())
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -126,7 +134,7 @@ func (h *Handler) DeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.DeleteRequest(userID, reqID)
+	err = h.service.DeleteRequest(ctx, userID, reqID)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())

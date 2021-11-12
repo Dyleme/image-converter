@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"mime/multipart"
 
 	"github.com/Dyleme/image-coverter/pkg/model"
@@ -8,20 +9,20 @@ import (
 )
 
 type Authorization interface {
-	CreateUser(user model.User) (int, error)
-	ValidateUser(user model.User) (string, error)
-	ParseToken(token string) (int, error)
+	CreateUser(ctx context.Context, user model.User) (int, error)
+	ValidateUser(ctx context.Context, user model.User) (string, error)
+	ParseToken(ctx context.Context, token string) (int, error)
 }
 
 type Requests interface {
-	GetRequests(userID int) ([]model.Request, error)
-	GetRequest(userID int, reqID int) (*model.Request, error)
-	DeleteRequest(userID int, reqID int) error
-	AddRequest(int, multipart.File, string, model.ConversionInfo) (int, error)
+	GetRequests(ctx context.Context, userID int) ([]model.Request, error)
+	GetRequest(ctx context.Context, userID int, reqID int) (*model.Request, error)
+	DeleteRequest(ctx context.Context, userID int, reqID int) error
+	AddRequest(context.Context, int, multipart.File, string, model.ConversionInfo) (int, error)
 }
 
 type Download interface {
-	DownloadImage(userID, imageID int) ([]byte, error)
+	DownloadImage(ctx context.Context, userID, imageID int) ([]byte, error)
 }
 
 type Interface interface {
@@ -37,9 +38,9 @@ type Service struct {
 }
 
 type Storager interface {
-	GetFile(path string) ([]byte, error)
-	UploadFile(userID int, fileName string, data []byte) (string, error)
-	DeleteFile(path string) error
+	GetFile(ctx context.Context, path string) ([]byte, error)
+	UploadFile(ctx context.Context, userID int, fileName string, data []byte) (string, error)
+	DeleteFile(ctx context.Context, path string) error
 }
 
 func NewService(rep repository.Interface, stor Storager) *Service {

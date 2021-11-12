@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -16,7 +17,7 @@ func NewReqPostgres(db *sql.DB) *ReqPostgres {
 	return &ReqPostgres{db: db}
 }
 
-func (r *ReqPostgres) GetRequests(userID int) ([]model.Request, error) {
+func (r *ReqPostgres) GetRequests(ctx context.Context, userID int) ([]model.Request, error) {
 	query := fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
 	 processed_id, ratio, original_type, processed_type FROM %s WHERE user_id = $1`, requestTable)
 
@@ -58,7 +59,7 @@ func (r *ReqPostgres) GetRequests(userID int) ([]model.Request, error) {
 	return reqs, nil
 }
 
-func (r *ReqPostgres) GetRequest(userID, reqID int) (*model.Request, error) {
+func (r *ReqPostgres) GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error) {
 	query := fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
 	 processed_id, ratio, original_type, processed_type FROM %s WHERE id = $1 and user_id = $2`, requestTable)
 
@@ -89,7 +90,7 @@ func (r *ReqPostgres) GetRequest(userID, reqID int) (*model.Request, error) {
 	return &req, nil
 }
 
-func (r *ReqPostgres) AddRequest(req *model.Request, userID int) (int, error) {
+func (r *ReqPostgres) AddRequest(ctx context.Context, req *model.Request, userID int) (int, error) {
 	query := fmt.Sprintf(`INSERT INTO %s (op_status, request_time, original_id, 
 		user_id, ratio, original_type, processed_type)
 		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`, requestTable)
@@ -104,7 +105,7 @@ func (r *ReqPostgres) AddRequest(req *model.Request, userID int) (int, error) {
 	return reqID, nil
 }
 
-func (r *ReqPostgres) AddProcessedImageIDToRequest(reqID, imageID int) error {
+func (r *ReqPostgres) AddProcessedImageIDToRequest(ctx context.Context, reqID, imageID int) error {
 	query := fmt.Sprintf(`UPDATE %s SET processed_id = $1 WHERE id = $2 RETURNING id;`, requestTable)
 	row := r.db.QueryRow(query, imageID, reqID)
 
@@ -116,7 +117,7 @@ func (r *ReqPostgres) AddProcessedImageIDToRequest(reqID, imageID int) error {
 	return nil
 }
 
-func (r *ReqPostgres) AddProcessedTimeToRequest(reqID int, t time.Time) error {
+func (r *ReqPostgres) AddProcessedTimeToRequest(ctx context.Context, reqID int, t time.Time) error {
 	query := fmt.Sprintf(`UPDATE %s SET completion_time = $1 WHERE id = $2 RETURNING id;`, requestTable)
 	row := r.db.QueryRow(query, t, reqID)
 
@@ -128,7 +129,7 @@ func (r *ReqPostgres) AddProcessedTimeToRequest(reqID int, t time.Time) error {
 	return nil
 }
 
-func (r *ReqPostgres) AddImage(userID int, imageInfo model.Info) (int, error) {
+func (r *ReqPostgres) AddImage(ctx context.Context, userID int, imageInfo model.Info) (int, error) {
 	query := fmt.Sprintf(`INSERT INTO %s (resoolution_x, resoolution_y, im_type, image_url, user_id)
 		VALUES ($1, $2, $3, $4, $5) RETURNING id;`, imageTable)
 	row := r.db.QueryRow(query, imageInfo.ResoultionX, imageInfo.ResoultionY,
@@ -142,7 +143,7 @@ func (r *ReqPostgres) AddImage(userID int, imageInfo model.Info) (int, error) {
 	return imageID, nil
 }
 
-func (r *ReqPostgres) DeleteRequest(userID, reqID int) (im1id, im2id int, err error) {
+func (r *ReqPostgres) DeleteRequest(ctx context.Context, userID, reqID int) (im1id, im2id int, err error) {
 	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING original_id, processed_id`, requestTable)
 
 	row := r.db.QueryRow(query, userID, reqID)
@@ -156,7 +157,7 @@ func (r *ReqPostgres) DeleteRequest(userID, reqID int) (im1id, im2id int, err er
 	return im1id, im2id, nil
 }
 
-func (r *ReqPostgres) DeleteImage(userID, imageID int) (string, error) {
+func (r *ReqPostgres) DeleteImage(ctx context.Context, userID, imageID int) (string, error) {
 	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING image_url`, imageTable)
 
 	row := r.db.QueryRow(query, userID, imageID)

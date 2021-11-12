@@ -8,13 +8,15 @@ import (
 )
 
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	var input model.User
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		newErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	jwtToken, err := h.service.ValidateUser(input)
+	jwtToken, err := h.service.ValidateUser(ctx, input)
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -24,13 +26,15 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) RegiterHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	var input model.User
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		newErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	id, err := h.service.CreateUser(input)
+	id, err := h.service.CreateUser(ctx, input)
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return

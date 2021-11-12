@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"image/jpeg"
 	"image/png"
@@ -35,8 +36,8 @@ func NewRequestService(repo repository.Request, stor Storager) *RequestService {
 	return &RequestService{repo: repo, storage: stor}
 }
 
-func (s *RequestService) GetRequests(userID int) ([]model.Request, error) {
-	reqs, err := s.repo.GetRequests(userID)
+func (s *RequestService) GetRequests(ctx context.Context, userID int) ([]model.Request, error) {
+	reqs, err := s.repo.GetRequests(ctx, userID)
 
 	if err != nil {
 		return nil, err
@@ -45,7 +46,7 @@ func (s *RequestService) GetRequests(userID int) ([]model.Request, error) {
 	return reqs, nil
 }
 
-func (s *RequestService) AddRequest(userID int, file multipart.File,
+func (s *RequestService) AddRequest(ctx context.Context, userID int, file multipart.File,
 	fileName string, convInfo model.ConversionInfo) (int, error) {
 	reqTime := time.Now()
 	pointIndex := strings.LastIndex(fileName, ".")
@@ -56,7 +57,7 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 		return 0, err
 	}
 
-	url, err := s.UploadImage(pic, fileName, oldType, userID)
+	url, err := s.UploadImage(ctx, pic, fileName, oldType, userID)
 	if err != nil {
 		return 0, fmt.Errorf("upload: %w", err)
 	}
@@ -69,7 +70,7 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 		Type:        oldType,
 	}
 
-	imageID, err := s.repo.AddImage(userID, imageInfo)
+	imageID, err := s.repo.AddImage(ctx, userID, imageInfo)
 	if err != nil {
 		return 0, fmt.Errorf("repo add image: %w", err)
 	}
@@ -83,7 +84,7 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 		ProcessedType: convInfo.Type,
 	}
 
-	reqID, err := s.repo.AddRequest(&req, userID)
+	reqID, err := s.repo.AddRequest(ctx, &req, userID)
 	if err != nil {
 		return 0, fmt.Errorf("repo add request: %w", err)
 	}
@@ -94,7 +95,7 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 
 	convFileName := fileName[:pointIndex] + "_conv." + convInfo.Type
 
-	newURL, err := s.UploadImage(pic, convFileName, convInfo.Type, userID)
+	newURL, err := s.UploadImage(ctx, pic, convFileName, convInfo.Type, userID)
 	if err != nil {
 		return 0, fmt.Errorf("upload: %w", err)
 	}
@@ -107,19 +108,19 @@ func (s *RequestService) AddRequest(userID int, file multipart.File,
 		Type:        oldType,
 	}
 
-	newImageID, err := s.repo.AddImage(userID, newImageInfo)
+	newImageID, err := s.repo.AddImage(ctx, userID, newImageInfo)
 	if err != nil {
 		return 0, fmt.Errorf("repo add image: %w", err)
 	}
 
-	err = s.repo.AddProcessedImageIDToRequest(reqID, newImageID)
+	err = s.repo.AddProcessedImageIDToRequest(ctx, reqID, newImageID)
 	if err != nil {
 		return 0, fmt.Errorf("repo update image in request: %w", err)
 	}
 
 	completionTime := time.Now()
 
-	err = s.repo.AddProcessedTimeToRequest(reqID, completionTime)
+	err = s.repo.AddProcessedTimeToRequest(ctx, reqID, completionTime)
 	if err != nil {
 		return 0, fmt.Errorf("repo update time in request: %w", err)
 	}
@@ -161,8 +162,8 @@ func encodeImage(i image.Image, fileType string) ([]byte, error) {
 	return bf.Bytes(), nil
 }
 
-func (s *RequestService) GetRequest(userID, reqID int) (*model.Request, error) {
-	req, err := s.repo.GetRequest(userID, reqID)
+func (s *RequestService) GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error) {
+	req, err := s.repo.GetRequest(ctx, userID, reqID)
 
 	if err != nil {
 		return nil, err
@@ -171,29 +172,29 @@ func (s *RequestService) GetRequest(userID, reqID int) (*model.Request, error) {
 	return req, nil
 }
 
-func (s *RequestService) DeleteRequest(userID, reqID int) error {
-	im1ID, im2ID, err := s.repo.DeleteRequest(userID, reqID)
+func (s *RequestService) DeleteRequest(ctx context.Context, userID, reqID int) error {
+	im1ID, im2ID, err := s.repo.DeleteRequest(ctx, userID, reqID)
 
 	if err != nil {
 		return err
 	}
 
-	url1, err := s.repo.DeleteImage(userID, im1ID)
+	url1, err := s.repo.DeleteImage(ctx, userID, im1ID)
 	if err != nil {
 		return err
 	}
 
-	url2, err := s.repo.DeleteImage(userID, im2ID)
+	url2, err := s.repo.DeleteImage(ctx, userID, im2ID)
 	if err != nil {
 		return err
 	}
 
-	err = s.storage.DeleteFile(url1)
+	err = s.storage.DeleteFile(ctx, url1)
 	if err != nil {
 		return err
 	}
 
-	err = s.storage.DeleteFile(url2)
+	err = s.storage.DeleteFile(ctx, url2)
 	if err != nil {
 		return err
 	}
@@ -201,13 +202,14 @@ func (s *RequestService) DeleteRequest(userID, reqID int) error {
 	return err
 }
 
-func (s *RequestService) UploadImage(i image.Image, fileName, imageType string, userID int) (string, error) {
+func (s *RequestService) UploadImage(ctx context.Context, i image.Image,
+	fileName, imageType string, userID int) (string, error) {
 	bf, err := encodeImage(i, imageType)
 	if err != nil {
 		return "", err
 	}
 
-	newURL, err := s.storage.UploadFile(userID, fileName, bf)
+	newURL, err := s.storage.UploadFile(ctx, userID, fileName, bf)
 	if err != nil {
 		return "", err
 	}

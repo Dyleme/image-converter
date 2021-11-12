@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -25,22 +26,20 @@ func NewAuthSevice(repo repository.Authorization) *AuthService {
 	return &AuthService{repo: repo}
 }
 
-func (s *AuthService) CreateUser(user model.User) (int, error) {
+func (s *AuthService) CreateUser(ctx context.Context, user model.User) (int, error) {
 	user.Password = generatePasswordHash(user.Password)
-	return s.repo.CreateUser(user)
+	return s.repo.CreateUser(ctx, user)
 }
 
 var ErrWrongPassword = errors.New("wrong password")
 
 var ErrTokenClaimsInvalidType = errors.New("token claims are not of the type MapClaims")
 
-type ErrUnexpectedSingingMethod struct {
+type UnexpectedSingingMethodError struct {
 	method interface{}
 }
 
-// v *ErrUnexpectedSingingMethod
-
-func (err ErrUnexpectedSingingMethod) Error() string {
+func (err UnexpectedSingingMethodError) Error() string {
 	return fmt.Sprintf("unexpected singing method: %v", err.method)
 }
 
@@ -49,8 +48,8 @@ type tokenClaims struct {
 	UserID int `json:"UserID"`
 }
 
-func (s *AuthService) ValidateUser(user model.User) (string, error) {
-	hash, id, err := s.repo.GetPasswordAndID(user.Nickname)
+func (s *AuthService) ValidateUser(ctx context.Context, user model.User) (string, error) {
+	hash, id, err := s.repo.GetPasswordAndID(ctx, user.Nickname)
 	if err != nil {
 		return "", ErrWrongPassword
 	}
@@ -70,10 +69,10 @@ func (s *AuthService) ValidateUser(user model.User) (string, error) {
 	return jwtToken.SignedString([]byte(signedKey))
 }
 
-func (s *AuthService) ParseToken(tokenString string) (int, error) {
+func (s *AuthService) ParseToken(ctx context.Context, tokenString string) (int, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return 0, ErrUnexpectedSingingMethod{t.Header["alg"]}
+			return 0, UnexpectedSingingMethodError{t.Header["alg"]}
 		}
 
 		return []byte(signedKey), nil

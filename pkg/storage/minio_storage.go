@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -25,7 +26,7 @@ func NewMinioStorage(endpoint, accessKeyID, secretAccessKey string, useSSL bool)
 	return &MinioStorage{client: *cl}, nil
 }
 
-func (m *MinioStorage) GetFile(path string) ([]byte, error) {
+func (m *MinioStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
 	exist, err := m.client.BucketExists("images")
 
 	if err != nil {
@@ -51,7 +52,7 @@ func (m *MinioStorage) GetFile(path string) ([]byte, error) {
 	return bf.Bytes(), err
 }
 
-func (m *MinioStorage) UploadFile(userID int, fileName string, data []byte) (string, error) {
+func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName string, data []byte) (string, error) {
 	exist, err := m.client.BucketExists("images")
 	if err != nil {
 		return "", err
@@ -93,7 +94,7 @@ func (m *MinioStorage) UploadFile(userID int, fileName string, data []byte) (str
 	return fileName, nil
 }
 
-func (m *MinioStorage) DeleteFile(path string) error {
+func (m *MinioStorage) DeleteFile(ctx context.Context, path string) error {
 	exist, err := m.client.BucketExists("images")
 	if err != nil {
 		return err

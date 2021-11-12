@@ -8,7 +8,9 @@ import (
 )
 
 func (h *Handler) DownloadImageHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := getUserFromContext(r)
+	ctx := r.Context()
+	userID, err := getUserFromContext(ctx)
+
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -29,7 +31,7 @@ func (h *Handler) DownloadImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	b, err := h.service.DownloadImage(userID, imageID)
+	b, err := h.service.DownloadImage(ctx, userID, imageID)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
