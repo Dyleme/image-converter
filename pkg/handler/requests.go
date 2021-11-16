@@ -18,7 +18,7 @@ func (h *Handler) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reqs, err := h.service.GetRequests(ctx, userID)
+	reqs, err := h.requestService.GetRequests(ctx, userID)
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -61,7 +61,7 @@ func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageID, err := h.service.AddRequest(ctx, userID, file, header.Filename, sendInfo)
+	reqID, err := h.requestService.AddRequest(ctx, userID, file, header.Filename, sendInfo)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -69,9 +69,9 @@ func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m := struct {
-		ImageID int `json:"requestID"`
+		RequestID int `json:"requestID"`
 	}{
-		ImageID: imageID,
+		RequestID: reqID,
 	}
 	newJSONResponse(w, m)
 }
@@ -100,7 +100,7 @@ func (h *Handler) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request, err := h.service.GetRequest(ctx, userID, reqID)
+	request, err := h.requestService.GetRequest(ctx, userID, reqID)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -134,7 +134,7 @@ func (h *Handler) DeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.DeleteRequest(ctx, userID, reqID)
+	err = h.requestService.DeleteRequest(ctx, userID, reqID)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())

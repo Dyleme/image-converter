@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -21,7 +22,7 @@ func newErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 		statusCode = http.StatusInternalServerError
 	}
 
-	w.Write(js) //nolint:errcheck // error can't appear
+	fmt.Fprint(w, js)
 
 	(w).WriteHeader(statusCode)
 }
@@ -34,10 +35,10 @@ func newJSONResponse(w http.ResponseWriter, v interface{}) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(js) //nolint:errcheck // can't appear
+	fmt.Fprint(w, js)
 }
 
 func newDownloadFileResponce(w http.ResponseWriter, b []byte) {
 	w.Header().Add("Content-Disposition", "Attachment")
-	w.Write(b) //nolint:errcheck // error can't appear
+	fmt.Fprint(w, b)
 }

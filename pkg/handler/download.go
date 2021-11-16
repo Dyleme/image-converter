@@ -31,7 +31,7 @@ func (h *Handler) DownloadImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	b, err := h.service.DownloadImage(ctx, userID, imageID)
+	b, err := h.downloadService.DownloadImage(ctx, userID, imageID)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())

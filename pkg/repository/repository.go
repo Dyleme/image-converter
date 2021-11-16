@@ -28,19 +28,13 @@ type Download interface {
 	GetImageURL(ctx context.Context, userID int, imageID int) (string, error)
 }
 
-type Interface interface {
-	Authorization
-	Request
-	Download
-}
-
 type Repository struct {
 	Request
 	Authorization
 	Download
 }
 
-func NewRepository(db *sql.DB) Interface {
+func NewRepository(db *sql.DB) *Repository {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
 		Request:       NewReqPostgres(db),

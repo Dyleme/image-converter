@@ -8,11 +8,13 @@ import (
 )
 
 type Handler struct {
-	service service.Interface
+	authService     service.Authorization
+	requestService  service.Requests
+	downloadService service.Download
 }
 
-func NewServer(serv service.Interface) *Handler {
-	return &Handler{service: serv}
+func NewServer(auth service.AuthService, request service.RequestService, download service.DownloadService) *Handler {
+	return &Handler{authService: &auth, requestService: &request, downloadService: &download}
 }
 
 func (h *Handler) InitRouters() *mux.Router {
@@ -32,7 +34,6 @@ func (h *Handler) InitRouters() *mux.Router {
 
 	router.Use(logging)
 	authRouter.Use(h.checkJWT)
-	router.Use(addTimeoutForResponse)
 
 	return router
 }

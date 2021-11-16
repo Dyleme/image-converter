@@ -16,7 +16,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwtToken, err := h.service.ValidateUser(ctx, input)
+	jwtToken, err := h.authService.ValidateUser(ctx, input)
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -34,7 +34,7 @@ func (h *Handler) RegiterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.service.CreateUser(ctx, input)
+	id, err := h.authService.CreateUser(ctx, input)
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return

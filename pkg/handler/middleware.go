@@ -20,10 +20,6 @@ const (
 	keyUserID key = "keyUserID"
 )
 
-const (
-	timeout = 5 * time.Second
-)
-
 var ErrContextHaveNotUser = errors.New("can't get user from context")
 
 func (h *Handler) checkJWT(handler http.Handler) http.Handler {
@@ -69,24 +65,6 @@ func logging(handler http.Handler) http.Handler {
 		begin := time.Now()
 		handler.ServeHTTP(w, r)
 		log.Printf("request %v method %v time for answer : %v", r.URL.Path, r.Method, time.Since(begin))
-	})
-}
-
-func addTimeoutForResponse(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		ctx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
-
-		r = r.WithContext(ctx)
-		go handler.ServeHTTP(w, r)
-
-		select {
-		case <-time.After(1 * time.Second):
-			fmt.Println("overslept")
-		case <-ctx.Done():
-			fmt.Print(ctx.Err())
-		}
 	})
 }
 
