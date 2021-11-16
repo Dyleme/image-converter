@@ -1,9 +1,10 @@
 package main
 
 import (
-	"log"
 	"os"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"

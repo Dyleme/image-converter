@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 )
 
@@ -12,7 +11,6 @@ type errorResponse struct {
 }
 
 func newErrorResponse(w http.ResponseWriter, statusCode int, message string) {
-	log.Println(message)
 	(w).Header().Set("Content-Type", "application/json; charset=utf-8")
 	(w).Header().Set("X-Content-Type-Options", "nosniff")
 
@@ -22,9 +20,9 @@ func newErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 		statusCode = http.StatusInternalServerError
 	}
 
-	fmt.Fprint(w, string(js))
-
 	w.WriteHeader(statusCode)
+
+	fmt.Fprint(w, string(js))
 }
 
 func newJSONResponse(w http.ResponseWriter, v interface{}) {

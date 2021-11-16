@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Dyleme/image-coverter/pkg/jwt"
 	"github.com/Dyleme/image-coverter/pkg/model"
 	"github.com/gorilla/mux"
 )
@@ -12,7 +13,7 @@ import (
 func (h *Handler) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, err := getUserFromContext(ctx)
+	userID, err := jwt.GetUserFromContext(ctx)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -30,7 +31,7 @@ func (h *Handler) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, err := getUserFromContext(ctx)
+	userID, err := jwt.GetUserFromContext(ctx)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -79,7 +80,7 @@ func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, err := getUserFromContext(ctx)
+	userID, err := jwt.GetUserFromContext(ctx)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
@@ -113,7 +114,7 @@ func (h *Handler) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, err := getUserFromContext(r.Context())
+	userID, err := jwt.GetUserFromContext(ctx)
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return

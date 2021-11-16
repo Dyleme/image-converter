@@ -2,25 +2,22 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
-)
 
-type key string
+	log "github.com/sirupsen/logrus"
+
+	"github.com/Dyleme/image-coverter/pkg/jwt"
+)
 
 const (
 	AuthorizationHeader = "Authorization"
 
 	BearerToken = "Bearer"
-
-	keyUserID key = "keyUserID"
 )
-
-var ErrContextHaveNotUser = errors.New("can't get user from context")
 
 func (h *Handler) checkJWT(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -46,13 +43,13 @@ func (h *Handler) checkJWT(handler http.Handler) http.Handler {
 		authJWT := auth[len(BearerToken):]
 		authJWT = strings.TrimPrefix(authJWT, " ")
 
-		userID, err := h.authService.ParseToken(ctx, authJWT)
+		userID, err := jwt.ParseToken(ctx, authJWT)
 		if err != nil {
 			newErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("middleware: %w", err).Error())
 			return
 		}
 
-		ctx = context.WithValue(ctx, keyUserID, userID)
+		ctx = context.WithValue(ctx, jwt.KeyUserID, userID)
 
 		r = r.WithContext(ctx)
 
@@ -64,16 +61,15 @@ func logging(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		begin := time.Now()
 		handler.ServeHTTP(w, r)
-		log.Printf("request %v method %v time for answer : %v", r.URL.Path, r.Method, time.Since(begin))
+		file, err := os.OpenFile("log", os.O_RDWR|os.O_CREATE|os.O_APPEND, os.ModeAppend)
+		if err != nil {
+			log.Fatal()
+		}
+		log.SetOutput(file)
+		log.WithFields(log.Fields{
+			"request path":    r.URL.Path,
+			"reqest method":   r.Method,
+			"time for answer": time.Since(begin),
+		}).Info("request handled")
 	})
-}
-
-func getUserFromContext(ctx context.Context) (int, error) {
-	userID, ok := ctx.Value(keyUserID).(int)
-
-	if !ok {
-		return 0, ErrContextHaveNotUser
-	}
-
-	return userID, nil
 }

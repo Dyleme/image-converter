@@ -22,7 +22,6 @@ func NewServer(auth Autharizater, request Requester, download Downloader) *Handl
 type Autharizater interface {
 	CreateUser(ctx context.Context, user model.User) (int, error)
 	ValidateUser(ctx context.Context, user model.User) (string, error)
-	ParseToken(ctx context.Context, token string) (int, error)
 }
 
 type Requester interface {

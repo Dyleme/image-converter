@@ -4,12 +4,13 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Dyleme/image-coverter/pkg/jwt"
 	"github.com/gorilla/mux"
 )
 
 func (h *Handler) DownloadImageHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userID, err := getUserFromContext(ctx)
+	userID, err := jwt.GetUserFromContext(ctx)
 
 	if err != nil {
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())

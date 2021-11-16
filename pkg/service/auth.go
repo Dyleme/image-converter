@@ -3,18 +3,15 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strconv"
 	"time"
 
+	"github.com/Dyleme/image-coverter/pkg/jwt"
 	"github.com/Dyleme/image-coverter/pkg/model"
-	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
-	tokenTTL  = 4 * time.Hour
-	signedKey = "2lkj^@dkjg#)jfkdlg"
+	tokenTTL = 4 * time.Hour
 )
 
 type Autharizater interface {
@@ -37,21 +34,6 @@ func (s *AuthService) CreateUser(ctx context.Context, user model.User) (int, err
 
 var ErrWrongPassword = errors.New("wrong password")
 
-var ErrTokenClaimsInvalidType = errors.New("token claims are not of the type MapClaims")
-
-type UnexpectedSingingMethodError struct {
-	method interface{}
-}
-
-func (err UnexpectedSingingMethodError) Error() string {
-	return fmt.Sprintf("unexpected singing method: %v", err.method)
-}
-
-type tokenClaims struct {
-	jwt.StandardClaims
-	UserID int `json:"UserID"`
-}
-
 func (s *AuthService) ValidateUser(ctx context.Context, user model.User) (string, error) {
 	hash, id, err := s.repo.GetPasswordAndID(ctx, user.Nickname)
 	if err != nil {
@@ -62,41 +44,7 @@ func (s *AuthService) ValidateUser(ctx context.Context, user model.User) (string
 		return "", ErrWrongPassword
 	}
 
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
-		jwt.StandardClaims{
-			IssuedAt:  time.Now().Unix(),
-			ExpiresAt: time.Now().Add(tokenTTL).Unix(),
-		},
-		id,
-	})
-
-	return jwtToken.SignedString([]byte(signedKey))
-}
-
-func (s *AuthService) ParseToken(ctx context.Context, tokenString string) (int, error) {
-	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return 0, UnexpectedSingingMethodError{t.Header["alg"]}
-		}
-
-		return []byte(signedKey), nil
-	})
-
-	if err != nil {
-		return 0, err
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if ok && token.Valid {
-		userID, err := strconv.Atoi(fmt.Sprintf("%.f", claims["UserID"]))
-		if err != nil {
-			return 0, fmt.Errorf("parse token: %w", err)
-		}
-
-		return userID, nil
-	}
-
-	return 0, ErrTokenClaimsInvalidType
+	return jwt.CreateToketn(ctx, tokenTTL, id)
 }
 
 func generatePasswordHash(password string) string {
