@@ -22,9 +22,9 @@ func newErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 		statusCode = http.StatusInternalServerError
 	}
 
-	fmt.Fprint(w, js)
+	fmt.Fprint(w, string(js))
 
-	(w).WriteHeader(statusCode)
+	w.WriteHeader(statusCode)
 }
 
 func newJSONResponse(w http.ResponseWriter, v interface{}) {
@@ -35,10 +35,10 @@ func newJSONResponse(w http.ResponseWriter, v interface{}) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprint(w, js)
+	fmt.Fprint(w, string(js))
 }
 
 func newDownloadFileResponce(w http.ResponseWriter, b []byte) {
 	w.Header().Add("Content-Disposition", "Attachment")
-	fmt.Fprint(w, b)
+	fmt.Fprint(w, string(b))
 }
