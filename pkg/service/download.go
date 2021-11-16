@@ -3,16 +3,18 @@ package service
 import (
 	"context"
 	"fmt"
-
-	"github.com/Dyleme/image-coverter/pkg/repository"
 )
 
+type Downloader interface {
+	GetImageURL(ctx context.Context, userID int, imageID int) (string, error)
+}
+
 type DownloadService struct {
-	repo repository.Download
+	repo Downloader
 	stor Storager
 }
 
-func NewDownloadSerivce(repo repository.Download, stor Storager) *DownloadService {
+func NewDownloadSerivce(repo Downloader, stor Storager) *DownloadService {
 	return &DownloadService{repo: repo, stor: stor}
 }
 

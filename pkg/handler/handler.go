@@ -1,20 +1,39 @@
 package handler
 
 import (
+	"context"
+	"mime/multipart"
 	"net/http"
 
-	"github.com/Dyleme/image-coverter/pkg/service"
+	"github.com/Dyleme/image-coverter/pkg/model"
 	"github.com/gorilla/mux"
 )
 
 type Handler struct {
-	authService     service.Authorization
-	requestService  service.Requests
-	downloadService service.Download
+	authService     Autharizater
+	requestService  Requester
+	downloadService Downloader
 }
 
-func NewServer(auth service.AuthService, request service.RequestService, download service.DownloadService) *Handler {
-	return &Handler{authService: &auth, requestService: &request, downloadService: &download}
+func NewServer(auth Autharizater, request Requester, download Downloader) *Handler {
+	return &Handler{authService: auth, requestService: request, downloadService: download}
+}
+
+type Autharizater interface {
+	CreateUser(ctx context.Context, user model.User) (int, error)
+	ValidateUser(ctx context.Context, user model.User) (string, error)
+	ParseToken(ctx context.Context, token string) (int, error)
+}
+
+type Requester interface {
+	GetRequests(ctx context.Context, userID int) ([]model.Request, error)
+	GetRequest(ctx context.Context, userID int, reqID int) (*model.Request, error)
+	DeleteRequest(ctx context.Context, userID int, reqID int) error
+	AddRequest(context.Context, int, multipart.File, string, model.ConversionInfo) (int, error)
+}
+
+type Downloader interface {
+	DownloadImage(ctx context.Context, userID, imageID int) ([]byte, error)
 }
 
 func (h *Handler) InitRouters() *mux.Router {

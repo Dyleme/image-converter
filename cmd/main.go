@@ -33,7 +33,9 @@ func main() {
 		log.Fatalf("failed to initialize db: %s", err)
 	}
 
-	repos := repository.NewRepository(db)
+	authRep := repository.NewAuthPostgres(db)
+	reqRep := repository.NewReqPostgres(db)
+	downRep := repository.NewDownloadPostgres(db)
 
 	useMinioSSL, err := strconv.ParseBool(os.Getenv("MNUSESSL"))
 	if err != nil {
@@ -51,8 +53,10 @@ func main() {
 		log.Fatalf("failed to initialize storage: %s", err)
 	}
 
-	services := service.NewService(repos, stor)
-	handlers := handler.NewServer(services)
+	authService := service.NewAuthSevice(authRep)
+	reqService := service.NewRequestService(reqRep, stor)
+	downService := service.NewDownloadSerivce(downRep, stor)
+	handlers := handler.NewServer(authService, reqService, downService)
 
 	port := os.Getenv("PORT")
 	srv := new(image.Server)

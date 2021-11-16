@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/Dyleme/image-coverter/pkg/model"
-	"github.com/Dyleme/image-coverter/pkg/repository"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -18,11 +17,16 @@ const (
 	signedKey = "2lkj^@dkjg#)jfkdlg"
 )
 
-type AuthService struct {
-	repo repository.Authorization
+type Autharizater interface {
+	CreateUser(ctx context.Context, user model.User) (int, error)
+	GetPasswordAndID(ctx context.Context, nickname string) (hash []byte, userID int, err error)
 }
 
-func NewAuthSevice(repo repository.Authorization) *AuthService {
+type AuthService struct {
+	repo Autharizater
+}
+
+func NewAuthSevice(repo Autharizater) *AuthService {
 	return &AuthService{repo: repo}
 }
 

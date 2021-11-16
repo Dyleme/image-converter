@@ -46,7 +46,7 @@ func (h *Handler) checkJWT(handler http.Handler) http.Handler {
 		authJWT := auth[len(BearerToken):]
 		authJWT = strings.TrimPrefix(authJWT, " ")
 
-		userID, err := h.service.ParseToken(ctx, authJWT)
+		userID, err := h.authService.ParseToken(ctx, authJWT)
 		if err != nil {
 			newErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("middleware: %w", err).Error())
 			return

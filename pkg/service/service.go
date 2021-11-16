@@ -2,33 +2,14 @@ package service
 
 import (
 	"context"
-	"mime/multipart"
-	"time"
 
-	"github.com/Dyleme/image-coverter/pkg/model"
+	"github.com/Dyleme/image-coverter/pkg/handler"
 )
 
-type Authorization interface {
-	CreateUser(ctx context.Context, user model.User) (int, error)
-	ValidateUser(ctx context.Context, user model.User) (string, error)
-	ParseToken(ctx context.Context, token string) (int, error)
-}
-
-type Requests interface {
-	GetRequests(ctx context.Context, userID int) ([]model.Request, error)
-	GetRequest(ctx context.Context, userID int, reqID int) (*model.Request, error)
-	DeleteRequest(ctx context.Context, userID int, reqID int) error
-	AddRequest(context.Context, int, multipart.File, string, model.ConversionInfo) (int, error)
-}
-
-type Download interface {
-	DownloadImage(ctx context.Context, userID, imageID int) ([]byte, error)
-}
-
 type Service struct {
-	Authorization
-	Requests
-	Download
+	handler.Autharizater
+	handler.Downloader
+	handler.Requester
 }
 
 type Storager interface {
@@ -37,30 +18,10 @@ type Storager interface {
 	DeleteFile(ctx context.Context, path string) error
 }
 
-type Authorization interface {
-	CreateUser(ctx context.Context, user model.User) (int, error)
-	GetPasswordAndID(ctx context.Context, nickname string) ([]byte, int, error)
-}
-
-type Request interface {
-	GetRequests(ctx context.Context, id int) ([]model.Request, error)
-	GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error)
-	AddRequest(ctx context.Context, req *model.Request, userID int) (int, error)
-	DeleteRequest(ctx context.Context, userID, reqID int) (int, int, error)
-	AddProcessedImageIDToRequest(ctx context.Context, reqID, imageID int) error
-	AddProcessedTimeToRequest(ctx context.Context, reqID int, t time.Time) error
-	AddImage(ctx context.Context, userID int, imageInfo model.Info) (int, error)
-	DeleteImage(ctx context.Context, userID, imageID int) (string, error)
-}
-
-type Download interface {
-	GetImageURL(ctx context.Context, userID int, imageID int) (string, error)
-}
-
-func NewService(auth, stor Storager) *Service {
+func NewService(stor Storager, req Requester, auth Autharizater, down Downloader) *Service {
 	return &Service{
-		Requests:      NewRequestService(rep, stor),
-		Authorization: NewAuthSevice(rep),
-		Download:      NewDownloadSerivce(rep, stor),
+		Requester:    NewRequestService(req, stor),
+		Autharizater: NewAuthSevice(auth),
+		Downloader:   NewDownloadSerivce(down, stor),
 	}
 }
