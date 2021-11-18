@@ -7,16 +7,18 @@ import (
 
 	"github.com/Dyleme/image-coverter/pkg/model"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 type Handler struct {
 	authService     Autharizater
 	requestService  Requester
 	downloadService Downloader
+	logger          *logrus.Logger
 }
 
-func NewServer(auth Autharizater, request Requester, download Downloader) *Handler {
-	return &Handler{authService: auth, requestService: request, downloadService: download}
+func New(auth Autharizater, request Requester, download Downloader, logger *logrus.Logger) *Handler {
+	return &Handler{authService: auth, requestService: request, downloadService: download, logger: logger}
 }
 
 type Autharizater interface {
@@ -50,7 +52,7 @@ func (h *Handler) InitRouters() *mux.Router {
 
 	authRouter.HandleFunc("/download/image/{id}", h.DownloadImageHandler).Methods(http.MethodGet)
 
-	router.Use(logging)
+	router.Use(h.logging)
 	authRouter.Use(h.checkJWT)
 
 	return router

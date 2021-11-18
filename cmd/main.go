@@ -1,25 +1,27 @@
 package main
 
 import (
+	"context"
 	"os"
 	"strconv"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
-	"github.com/Dyleme/image-coverter"
 	"github.com/Dyleme/image-coverter/pkg/handler"
+	"github.com/Dyleme/image-coverter/pkg/logging"
 	"github.com/Dyleme/image-coverter/pkg/repository"
+	"github.com/Dyleme/image-coverter/pkg/server"
 	"github.com/Dyleme/image-coverter/pkg/service"
 	"github.com/Dyleme/image-coverter/pkg/storage"
 )
 
 func main() {
+	logger := logging.NewLogger()
+
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
 	db, err := repository.NewPostgresDB(&repository.DBConfig{
@@ -31,7 +33,7 @@ func main() {
 		SSLMode:  os.Getenv("DBSSLMODE"),
 	})
 	if err != nil {
-		log.Fatalf("failed to initialize db: %s", err)
+		logger.Fatalf("failed to initialize db: %s", err)
 	}
 
 	authRep := repository.NewAuthPostgres(db)
@@ -40,7 +42,7 @@ func main() {
 
 	useMinioSSL, err := strconv.ParseBool(os.Getenv("MNUSESSL"))
 	if err != nil {
-		log.Fatalf("can't convert string to bool; %s", err)
+		logger.Fatalf("can't convert string to bool; %s", err)
 	}
 
 	stor, err := storage.NewMinioStorage(
@@ -51,18 +53,20 @@ func main() {
 	)
 
 	if err != nil {
-		log.Fatalf("failed to initialize storage: %s", err)
+		logger.Fatalf("failed to initialize storage: %s", err)
 	}
 
 	authService := service.NewAuthSevice(authRep)
 	reqService := service.NewRequestService(reqRep, stor)
 	downService := service.NewDownloadSerivce(downRep, stor)
-	handlers := handler.NewServer(authService, reqService, downService)
+	handlers := handler.New(authService, reqService, downService, logger)
 
 	port := os.Getenv("PORT")
-	srv := new(image.Server)
+	srv := new(server.Server)
 
-	if err := srv.Run(port, handlers.InitRouters()); err != nil {
-		log.Fatalf("error occurred runnging http server: %s", err.Error())
+	ctx := logging.WithLogger(context.Background(), logger)
+
+	if err := srv.Run(ctx, port, handlers.InitRouters()); err != nil {
+		logger.Fatalf("error occurred runnging http server: %s", err.Error())
 	}
 }

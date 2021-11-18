@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -12,9 +13,9 @@ import (
 
 type Key string
 
-const (
-	signedKey = "2lkj^@dkjg#)jfkdlg"
+var signedKey = os.Getenv("SIGNEDKEY")
 
+const (
 	KeyUserID Key = "keyUserID"
 )
 
@@ -35,7 +36,7 @@ type tokenClaims struct {
 	UserID int `json:"userID"`
 }
 
-func CreateToketn(ctx context.Context, tokenTTL time.Duration, id int) (string, error) {
+func CreateToken(ctx context.Context, tokenTTL time.Duration, id int) (string, error) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		jwt.StandardClaims{
 			IssuedAt:  time.Now().Unix(),
@@ -61,8 +62,9 @@ func ParseToken(ctx context.Context, tokenString string) (int, error) {
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
+
 	if ok && token.Valid {
-		userID, err := strconv.Atoi(fmt.Sprintf("%.f", claims["UserID"]))
+		userID, err := strconv.Atoi(fmt.Sprintf("%.f", claims["userID"]))
 		if err != nil {
 			return 0, fmt.Errorf("parse token: %w", err)
 		}

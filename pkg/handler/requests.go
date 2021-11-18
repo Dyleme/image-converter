@@ -15,13 +15,17 @@ func (h *Handler) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := jwt.GetUserFromContext(ctx)
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
+
 		return
 	}
 
 	reqs, err := h.requestService.GetRequests(ctx, userID)
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+
 		return
 	}
 
@@ -33,13 +37,17 @@ func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := jwt.GetUserFromContext(ctx)
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
+
 		return
 	}
 
 	file, header, err := r.FormFile("Image")
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+
 		return
 	}
 	defer file.Close()
@@ -50,7 +58,9 @@ func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal([]byte(info), &sendInfo)
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+
 		return
 	}
 
@@ -58,14 +68,18 @@ func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err = file.Read(buf)
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+
 		return
 	}
 
 	reqID, err := h.requestService.AddRequest(ctx, userID, file, header.Filename, sendInfo)
 
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+
 		return
 	}
 
@@ -82,7 +96,9 @@ func (h *Handler) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := jwt.GetUserFromContext(ctx)
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
+
 		return
 	}
 
@@ -90,21 +106,27 @@ func (h *Handler) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 	strReqID, ok := vars["reqID"]
 
 	if !ok {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusBadRequest, "id parameter is missing")
+
 		return
 	}
 
 	reqID, err := strconv.Atoi(strReqID)
 
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+
 		return
 	}
 
 	request, err := h.requestService.GetRequest(ctx, userID, reqID)
 
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+
 		return
 	}
 
@@ -116,7 +138,9 @@ func (h *Handler) DeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := jwt.GetUserFromContext(ctx)
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
+
 		return
 	}
 
@@ -124,21 +148,27 @@ func (h *Handler) DeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
 	strReqID, ok := vars["reqID"]
 
 	if !ok {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusBadRequest, "id parameter is missing")
+
 		return
 	}
 
 	reqID, err := strconv.Atoi(strReqID)
 
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+
 		return
 	}
 
 	err = h.requestService.DeleteRequest(ctx, userID, reqID)
 
 	if err != nil {
+		h.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+
 		return
 	}
 

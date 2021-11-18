@@ -44,7 +44,7 @@ func (s *AuthService) ValidateUser(ctx context.Context, user model.User) (string
 		return "", ErrWrongPassword
 	}
 
-	return jwt.CreateToketn(ctx, tokenTTL, id)
+	return jwt.CreateToken(ctx, tokenTTL, id)
 }
 
 func generatePasswordHash(password string) string {

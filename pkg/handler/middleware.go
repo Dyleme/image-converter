@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -57,16 +56,18 @@ func (h *Handler) checkJWT(handler http.Handler) http.Handler {
 	})
 }
 
-func logging(handler http.Handler) http.Handler {
+func (h *Handler) logging(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		begin := time.Now()
+		h.logger.WithFields(log.Fields{
+			"request path":    r.URL.Path,
+			"reqest method":   r.Method,
+			"time for answer": begin,
+		}).Info("get request")
+
 		handler.ServeHTTP(w, r)
-		file, err := os.OpenFile("log", os.O_RDWR|os.O_CREATE|os.O_APPEND, os.ModeAppend)
-		if err != nil {
-			log.Fatal()
-		}
-		log.SetOutput(file)
-		log.WithFields(log.Fields{
+
+		h.logger.WithFields(log.Fields{
 			"request path":    r.URL.Path,
 			"reqest method":   r.Method,
 			"time for answer": time.Since(begin),
