@@ -12,7 +12,10 @@ import (
 	"time"
 
 	"github.com/Dyleme/image-coverter/pkg/conversion"
+	"github.com/Dyleme/image-coverter/pkg/logging"
 	"github.com/Dyleme/image-coverter/pkg/model"
+	"github.com/Dyleme/image-coverter/pkg/repository"
+	"github.com/sirupsen/logrus"
 
 	"image"
 )
@@ -31,19 +34,102 @@ type Requester interface {
 	GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error)
 	AddRequest(ctx context.Context, req *model.Request, userID int) (int, error)
 	DeleteRequest(ctx context.Context, userID, reqID int) (int, int, error)
+	UpdateRequestStatus(ctx context.Context, reqID int, status string) error
 	AddProcessedImageIDToRequest(ctx context.Context, reqID, imageID int) error
 	AddProcessedTimeToRequest(ctx context.Context, reqID int, t time.Time) error
 	AddImage(ctx context.Context, userID int, imageInfo model.Info) (int, error)
 	DeleteImage(ctx context.Context, userID, imageID int) (string, error)
 }
 
+type ConvesionData struct {
+	ctx       context.Context
+	imageInfo model.ConversionInfo
+	userID    int
+	reqID     int
+	pic       image.Image
+	fileName  string
+}
+
 type RequestService struct {
 	repo    Requester
 	storage Storager
+	req     chan *ConvesionData
 }
 
-func NewRequestService(repo Requester, stor Storager) *RequestService {
-	return &RequestService{repo: repo, storage: stor}
+func (s *RequestService) worker(ch <-chan *ConvesionData) {
+	for data := range ch {
+		s.convert(data)
+	}
+}
+
+func (s *RequestService) convert(data *ConvesionData) {
+	ctx := data.ctx
+	logger := logging.FromContext(ctx)
+
+	err := s.repo.UpdateRequestStatus(ctx, data.reqID, repository.StatusProcessing)
+	if err != nil {
+		logger.Warn(fmt.Errorf("repo update status in request: %w", err))
+	}
+
+	begin := time.Now()
+
+	logger.WithField("name", data.fileName).Info("start image conversion")
+
+	if data.imageInfo.Ratio != 1 {
+		data.pic = conversion.Convert(data.pic, data.imageInfo.Ratio)
+	}
+
+	pointIndex := strings.LastIndex(data.fileName, ".")
+	convFileName := data.fileName[:pointIndex] + "_conv." + data.imageInfo.Type
+
+	newURL, err := s.UploadImage(ctx, data.pic, convFileName, data.imageInfo.Type, data.userID)
+	if err != nil {
+		logger.Warn(fmt.Errorf("upload: %w", err))
+	}
+
+	newX, newY := getResolution(data.pic)
+	newImageInfo := model.Info{
+		ResoultionX: newX,
+		ResoultionY: newY,
+		URL:         newURL,
+		Type:        data.imageInfo.Type,
+	}
+
+	newImageID, err := s.repo.AddImage(ctx, data.userID, newImageInfo)
+	if err != nil {
+		logger.Warn(fmt.Errorf("repo add image: %w", err))
+	}
+
+	err = s.repo.AddProcessedImageIDToRequest(ctx, data.reqID, newImageID)
+	if err != nil {
+		logger.Warn(fmt.Errorf("repo update image in request: %w", err))
+	}
+
+	completionTime := time.Now()
+
+	err = s.repo.AddProcessedTimeToRequest(ctx, data.reqID, completionTime)
+	if err != nil {
+		logger.Warn(fmt.Errorf("repo update time in request: %w", err))
+	}
+
+	err = s.repo.UpdateRequestStatus(ctx, data.reqID, repository.StatusDone)
+	if err != nil {
+		logger.Warn(fmt.Errorf("repo update status in request: %w", err))
+	}
+
+	logger.WithFields(logrus.Fields{
+		"time for conversion": time.Since(begin),
+		"name":                data.fileName,
+	}).Info("end image conversion")
+}
+
+func NewRequestService(repo Requester, stor Storager, workersAmount uint) *RequestService {
+	s := &RequestService{repo: repo, storage: stor, req: make(chan *ConvesionData)}
+	for i := 0; i < int(workersAmount); i++ {
+		go s.worker(s.req)
+	}
+
+	return s
 }
 
 func (s *RequestService) GetRequests(ctx context.Context, userID int) ([]model.Request, error) {
@@ -86,7 +172,7 @@ func (s *RequestService) AddRequest(ctx context.Context, userID int, file multip
 	}
 
 	req := model.Request{
-		OpStatus:      "queued",
+		OpStatus:      repository.StatusQueued,
 		RequestTime:   reqTime,
 		OriginalID:    imageID,
 		Ratio:         convInfo.Ratio,
@@ -99,41 +185,16 @@ func (s *RequestService) AddRequest(ctx context.Context, userID int, file multip
 		return 0, fmt.Errorf("repo add request: %w", err)
 	}
 
-	if convInfo.Ratio != 1 {
-		pic = conversion.Convert(pic, convInfo.Ratio)
+	convertImageInfo := ConvesionData{
+		ctx:       ctx,
+		imageInfo: convInfo,
+		userID:    userID,
+		reqID:     reqID,
+		pic:       pic,
+		fileName:  fileName,
 	}
 
-	convFileName := fileName[:pointIndex] + "_conv." + convInfo.Type
-
-	newURL, err := s.UploadImage(ctx, pic, convFileName, convInfo.Type, userID)
-	if err != nil {
-		return 0, fmt.Errorf("upload: %w", err)
-	}
-
-	newX, newY := getResolution(pic)
-	newImageInfo := model.Info{
-		ResoultionX: newX,
-		ResoultionY: newY,
-		URL:         newURL,
-		Type:        oldType,
-	}
-
-	newImageID, err := s.repo.AddImage(ctx, userID, newImageInfo)
-	if err != nil {
-		return 0, fmt.Errorf("repo add image: %w", err)
-	}
-
-	err = s.repo.AddProcessedImageIDToRequest(ctx, reqID, newImageID)
-	if err != nil {
-		return 0, fmt.Errorf("repo update image in request: %w", err)
-	}
-
-	completionTime := time.Now()
-
-	err = s.repo.AddProcessedTimeToRequest(ctx, reqID, completionTime)
-	if err != nil {
-		return 0, fmt.Errorf("repo update time in request: %w", err)
-	}
+	go func() { s.req <- &convertImageInfo }()
 
 	return reqID, nil
 }

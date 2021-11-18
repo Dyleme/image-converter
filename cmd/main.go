@@ -16,6 +16,8 @@ import (
 	"github.com/Dyleme/image-coverter/pkg/storage"
 )
 
+const imageConvertorsAmount = 5
+
 func main() {
 	logger := logging.NewLogger()
 
@@ -57,7 +59,7 @@ func main() {
 	}
 
 	authService := service.NewAuthSevice(authRep)
-	reqService := service.NewRequestService(reqRep, stor)
+	reqService := service.NewRequestService(reqRep, stor, imageConvertorsAmount)
 	downService := service.NewDownloadSerivce(downRep, stor)
 	handlers := handler.New(authService, reqService, downService, logger)
 

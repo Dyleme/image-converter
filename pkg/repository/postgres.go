@@ -13,6 +13,12 @@ const (
 	imageTable   = "images"
 )
 
+const (
+	StatusQueued     = `queued`
+	StatusProcessing = `processing`
+	StatusDone       = `done`
+)
+
 type DBConfig struct {
 	UserName string
 	Password string

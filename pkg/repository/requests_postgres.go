@@ -105,6 +105,18 @@ func (r *ReqPostgres) AddRequest(ctx context.Context, req *model.Request, userID
 	return reqID, nil
 }
 
+func (r *ReqPostgres) UpdateRequestStatus(ctx context.Context, reqID int, status string) error {
+	query := fmt.Sprintf(`UPDATE %s SET op_status = $1 WHERE id = $2 RETURNING id`, requestTable)
+	row := r.db.QueryRow(query, status, reqID)
+
+	var id int
+	if err := row.Scan(&id); err != nil {
+		return fmt.Errorf("repo: %w", err)
+	}
+
+	return nil
+}
+
 func (r *ReqPostgres) AddProcessedImageIDToRequest(ctx context.Context, reqID, imageID int) error {
 	query := fmt.Sprintf(`UPDATE %s SET processed_id = $1 WHERE id = $2 RETURNING id;`, requestTable)
 	row := r.db.QueryRow(query, imageID, reqID)
