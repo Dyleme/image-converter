@@ -82,7 +82,12 @@ func (s *RequestService) convert(data *ConvesionData) {
 	pointIndex := strings.LastIndex(data.fileName, ".")
 	convFileName := data.fileName[:pointIndex] + "_conv." + data.imageInfo.Type
 
-	newURL, err := s.UploadImage(ctx, data.pic, convFileName, data.imageInfo.Type, data.userID)
+	bts, err := encodeImage(data.pic, data.imageInfo.Type)
+	if err != nil {
+		logger.Warn(fmt.Errorf("encode image: %w", err))
+	}
+
+	newURL, err := s.uploadFile(ctx, bytes.NewReader(bts), convFileName, data.imageInfo.Type, data.userID)
 	if err != nil {
 		logger.Warn(fmt.Errorf("upload: %w", err))
 	}
@@ -153,7 +158,7 @@ func (s *RequestService) AddRequest(ctx context.Context, userID int, file multip
 		return 0, err
 	}
 
-	url, err := s.UploadImage(ctx, pic, fileName, oldType, userID)
+	url, err := s.uploadFile(ctx, file, fileName, oldType, userID)
 	if err != nil {
 		return 0, fmt.Errorf("upload: %w", err)
 	}
@@ -210,7 +215,7 @@ func decodeImage(r io.Reader, oldType string) (image.Image, error) {
 	}
 }
 
-func getResolution(i image.Image) (x, y int) {
+func getResolution(i image.Image) (width, height int) {
 	return i.Bounds().Dx(), i.Bounds().Dy()
 }
 
@@ -273,14 +278,16 @@ func (s *RequestService) DeleteRequest(ctx context.Context, userID, reqID int) e
 	return err
 }
 
-func (s *RequestService) UploadImage(ctx context.Context, i image.Image,
+func (s *RequestService) uploadFile(ctx context.Context, r io.Reader,
 	fileName, imageType string, userID int) (string, error) {
-	bf, err := encodeImage(i, imageType)
-	if err != nil {
+	var bf bytes.Buffer
+
+	n, err := bf.ReadFrom(r)
+	if err != nil || n == 0 {
 		return "", err
 	}
 
-	newURL, err := s.storage.UploadFile(ctx, userID, fileName, bf)
+	newURL, err := s.storage.UploadFile(ctx, userID, fileName, bf.Bytes())
 	if err != nil {
 		return "", err
 	}
