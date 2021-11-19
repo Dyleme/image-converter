@@ -64,16 +64,6 @@ func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var buf []byte
-
-	_, err = file.Read(buf)
-	if err != nil {
-		h.logger.Warn(err)
-		newErrorResponse(w, http.StatusInternalServerError, err.Error())
-
-		return
-	}
-
 	reqID, err := h.requestService.AddRequest(ctx, userID, file, header.Filename, sendInfo)
 
 	if err != nil {
