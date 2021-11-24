@@ -19,7 +19,7 @@ func NewReqPostgres(db *sql.DB) *ReqPostgres {
 
 func (r *ReqPostgres) GetRequests(ctx context.Context, userID int) ([]model.Request, error) {
 	query := fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
-	 processed_id, ratio, original_type, processed_type FROM %s WHERE user_id = $1`, requestTable)
+	 processed_id, ratio, original_type, processed_type FROM %s WHERE user_id = $1`, RequestTable)
 
 	rows, err := r.db.Query(query, userID)
 
@@ -61,7 +61,7 @@ func (r *ReqPostgres) GetRequests(ctx context.Context, userID int) ([]model.Requ
 
 func (r *ReqPostgres) GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error) {
 	query := fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
-	 processed_id, ratio, original_type, processed_type FROM %s WHERE id = $1 and user_id = $2`, requestTable)
+	 processed_id, ratio, original_type, processed_type FROM %s WHERE id = $1 and user_id = $2`, RequestTable)
 
 	row := r.db.QueryRow(query, reqID, userID)
 
@@ -93,7 +93,7 @@ func (r *ReqPostgres) GetRequest(ctx context.Context, userID, reqID int) (*model
 func (r *ReqPostgres) AddRequest(ctx context.Context, req *model.Request, userID int) (int, error) {
 	query := fmt.Sprintf(`INSERT INTO %s (op_status, request_time, original_id, 
 		user_id, ratio, original_type, processed_type)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`, requestTable)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`, RequestTable)
 	row := r.db.QueryRow(query, req.OpStatus, req.RequestTime, req.OriginalID,
 		userID, req.Ratio, req.OriginalType, req.ProcessedType)
 
@@ -106,7 +106,7 @@ func (r *ReqPostgres) AddRequest(ctx context.Context, req *model.Request, userID
 }
 
 func (r *ReqPostgres) UpdateRequestStatus(ctx context.Context, reqID int, status string) error {
-	query := fmt.Sprintf(`UPDATE %s SET op_status = $1 WHERE id = $2 RETURNING id`, requestTable)
+	query := fmt.Sprintf(`UPDATE %s SET op_status = $1 WHERE id = $2 RETURNING id`, RequestTable)
 	row := r.db.QueryRow(query, status, reqID)
 
 	var id int
@@ -118,7 +118,7 @@ func (r *ReqPostgres) UpdateRequestStatus(ctx context.Context, reqID int, status
 }
 
 func (r *ReqPostgres) AddProcessedImageIDToRequest(ctx context.Context, reqID, imageID int) error {
-	query := fmt.Sprintf(`UPDATE %s SET processed_id = $1 WHERE id = $2 RETURNING id;`, requestTable)
+	query := fmt.Sprintf(`UPDATE %s SET processed_id = $1 WHERE id = $2 RETURNING id;`, RequestTable)
 	row := r.db.QueryRow(query, imageID, reqID)
 
 	var id int
@@ -130,7 +130,7 @@ func (r *ReqPostgres) AddProcessedImageIDToRequest(ctx context.Context, reqID, i
 }
 
 func (r *ReqPostgres) AddProcessedTimeToRequest(ctx context.Context, reqID int, t time.Time) error {
-	query := fmt.Sprintf(`UPDATE %s SET completion_time = $1 WHERE id = $2 RETURNING id;`, requestTable)
+	query := fmt.Sprintf(`UPDATE %s SET completion_time = $1 WHERE id = $2 RETURNING id;`, RequestTable)
 	row := r.db.QueryRow(query, t, reqID)
 
 	var id int
@@ -143,7 +143,7 @@ func (r *ReqPostgres) AddProcessedTimeToRequest(ctx context.Context, reqID int, 
 
 func (r *ReqPostgres) AddImage(ctx context.Context, userID int, imageInfo model.Info) (int, error) {
 	query := fmt.Sprintf(`INSERT INTO %s (resoolution_x, resoolution_y, im_type, image_url, user_id)
-		VALUES ($1, $2, $3, $4, $5) RETURNING id;`, imageTable)
+		VALUES ($1, $2, $3, $4, $5) RETURNING id;`, ImageTable)
 	row := r.db.QueryRow(query, imageInfo.ResoultionX, imageInfo.ResoultionY,
 		imageInfo.Type, imageInfo.URL, userID)
 
@@ -156,7 +156,7 @@ func (r *ReqPostgres) AddImage(ctx context.Context, userID int, imageInfo model.
 }
 
 func (r *ReqPostgres) DeleteRequest(ctx context.Context, userID, reqID int) (im1id, im2id int, err error) {
-	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING original_id, processed_id`, requestTable)
+	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING original_id, processed_id`, RequestTable)
 
 	row := r.db.QueryRow(query, userID, reqID)
 
@@ -170,7 +170,7 @@ func (r *ReqPostgres) DeleteRequest(ctx context.Context, userID, reqID int) (im1
 }
 
 func (r *ReqPostgres) DeleteImage(ctx context.Context, userID, imageID int) (string, error) {
-	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING image_url`, imageTable)
+	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING image_url`, ImageTable)
 
 	row := r.db.QueryRow(query, userID, imageID)
 

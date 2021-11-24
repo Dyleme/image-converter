@@ -87,7 +87,7 @@ func (s *RequestService) convert(data *ConvesionData) {
 		logger.Warn(fmt.Errorf("encode image: %w", err))
 	}
 
-	newURL, err := s.uploadFile(ctx, bts, convFileName, data.imageInfo.Type, data.userID)
+	newURL, err := s.uploadFile(ctx, bts, convFileName, data.userID)
 	if err != nil {
 		logger.Warn(fmt.Errorf("upload: %w", err))
 	}

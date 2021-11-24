@@ -23,3 +23,13 @@ else
  printf "${GREEN}Linting passed! ${NORMAL}Continuing to commit.\n"
 fi
 
+printf "${MAGENTA}Running go test${NORMAL}\n"
+
+go test ./..
+if [[ $? != 0 ]]; then
+  printf "${RED}Testing failed! ${NORMAL}Please fix errors before committing.\n"
+  exit 1
+else
+ printf "${GREEN}Testing passed! ${NORMAL}Continuing to commit.\n"
+fi
+

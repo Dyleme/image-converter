@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	usersTable   = "users"
-	requestTable = "requests"
-	imageTable   = "images"
+	UsersTable   = "users"
+	RequestTable = "requests"
+	ImageTable   = "images"
 )
 
 const (
