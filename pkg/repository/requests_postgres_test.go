@@ -14,6 +14,28 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func NewReqMock(t *testing.T) (*repository.ReqPostgres, sqlmock.Sqlmock) {
+	t.Helper()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+
+	repo := repository.NewReqPostgres(db)
+
+	return repo, mock
+}
+
+func RepoReturnID(repo *repository.ReqPostgres, id int) *sqlmock.Rows {
+	rows := sqlmock.NewRows([]string{"id"})
+	if id != 0 {
+		rows = rows.AddRow(id)
+	}
+
+	return rows
+}
+
 func TestGetRequest(t *testing.T) {
 	testCases := []struct {
 		testName string
@@ -66,12 +88,7 @@ func TestGetRequest(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
-
-			repo := repository.NewReqPostgres(db)
+			repo, mock := NewReqMock(t)
 
 			rows := sqlmock.NewRows([]string{"id", "op_status", "request_time", "completion_time", "original_id", "processed_id",
 				"ratio", "original_type", "processed_type"})
@@ -135,18 +152,9 @@ func TestAddRequest(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
+			repo, mock := NewReqMock(t)
 
-			repo := repository.NewReqPostgres(db)
-
-			rows := sqlmock.NewRows([]string{"id"})
-
-			if tc.req != nil {
-				rows = rows.AddRow(tc.repoID)
-			}
+			rows := RepoReturnID(repo, tc.repoID)
 
 			mock.ExpectQuery(query).WithArgs(tc.req.OpStatus, tc.req.RequestTime,
 				tc.req.OriginalID, tc.userID, tc.req.Ratio, tc.req.OriginalType,
@@ -196,29 +204,20 @@ func TestUpdateRequestStatus(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
+			repo, mock := NewReqMock(t)
 
-			repo := repository.NewReqPostgres(db)
-
-			rows := sqlmock.NewRows([]string{"id"})
-
-			if tc.repoID != 0 {
-				rows = rows.AddRow(tc.repoID)
-			}
+			rows := RepoReturnID(repo, tc.repoID)
 
 			mock.ExpectQuery(query).WithArgs(tc.status, tc.reqID).WillReturnRows(rows)
 
 			gotErr := repo.UpdateRequestStatus(context.Background(), tc.reqID, tc.status)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
-			}
-
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)
+			}
+
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
 			}
 		})
 	}
@@ -234,14 +233,14 @@ func TestAddProcessedImageIDToRequest(t *testing.T) {
 	}{
 		{
 			testName: "all is good",
-			reqID:    12,
+			reqID:    521,
 			imageID:  13,
 			repoID:   23,
 			wantErr:  nil,
 		},
 		{
 			testName: "such row not present in database",
-			reqID:    12,
+			reqID:    932,
 			imageID:  13,
 			repoID:   0,
 			wantErr:  sql.ErrNoRows,
@@ -252,18 +251,9 @@ func TestAddProcessedImageIDToRequest(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
+			repo, mock := NewReqMock(t)
 
-			repo := repository.NewReqPostgres(db)
-
-			rows := sqlmock.NewRows([]string{"id"})
-
-			if tc.repoID != 0 {
-				rows = rows.AddRow(tc.repoID)
-			}
+			rows := RepoReturnID(repo, tc.repoID)
 
 			mock.ExpectQuery(query).WithArgs(tc.imageID, tc.reqID).WillReturnRows(rows)
 
@@ -308,18 +298,9 @@ func TestAddProcessedTimeToRequest(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
+			repo, mock := NewReqMock(t)
 
-			repo := repository.NewReqPostgres(db)
-
-			rows := sqlmock.NewRows([]string{"id"})
-
-			if tc.repoID != 0 {
-				rows = rows.AddRow(tc.repoID)
-			}
+			rows := RepoReturnID(repo, tc.repoID)
 
 			mock.ExpectQuery(query).WithArgs(tc.procTime, tc.reqID).WillReturnRows(rows)
 
@@ -365,18 +346,9 @@ func TestAddImage(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
+			repo, mock := NewReqMock(t)
 
-			repo := repository.NewReqPostgres(db)
-
-			rows := sqlmock.NewRows([]string{"id"})
-
-			if tc.imageInfo != nil {
-				rows = rows.AddRow(tc.repoID)
-			}
+			rows := RepoReturnID(repo, tc.repoID)
 
 			mock.ExpectQuery(query).WithArgs(tc.imageInfo.ResoultionX, tc.imageInfo.ResoultionY,
 				tc.imageInfo.Type, tc.imageInfo.URL, tc.userID).WillReturnRows(rows)
@@ -388,6 +360,132 @@ func TestAddImage(t *testing.T) {
 			}
 			if gotID != tc.wantID {
 				t.Errorf("Want id: %v, got id: %v", tc.wantID, gotID)
+			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were fulfilled expectations: %s", err)
+			}
+		})
+	}
+}
+
+func TestDeleteRequest(t *testing.T) {
+	testCases := []struct {
+		testName  string
+		userID    int
+		reqID     int
+		im1repoID int
+		im2repoID int
+		wantIm1ID int
+		wantIm2ID int
+		wantErr   error
+	}{
+		{
+			testName:  "all is good",
+			userID:    12,
+			reqID:     13,
+			im1repoID: 23,
+			im2repoID: 24,
+			wantIm1ID: 23,
+			wantIm2ID: 24,
+			wantErr:   nil,
+		}, {
+			testName:  "such rown not exist",
+			userID:    12,
+			reqID:     13,
+			im1repoID: 0,
+			im2repoID: 0,
+			wantIm1ID: 0,
+			wantIm2ID: 0,
+			wantErr:   sql.ErrNoRows,
+		}, {
+			testName:  "only one id is exist in row",
+			userID:    12,
+			reqID:     13,
+			im1repoID: 23,
+			im2repoID: 0,
+			wantIm1ID: 23,
+			wantIm2ID: 0,
+			wantErr:   nil,
+		},
+	}
+
+	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = .+ AND id = .+ 
+		RETURNING original_id, processed_id`, repository.RequestTable)
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			repo, mock := NewReqMock(t)
+
+			rows := sqlmock.NewRows([]string{"original_id", "processed_id"})
+
+			if tc.im1repoID != 0 {
+				rows = rows.AddRow(tc.im1repoID, tc.im2repoID)
+			}
+
+			mock.ExpectQuery(query).WithArgs(tc.userID, tc.reqID).WillReturnRows(rows)
+
+			gotIm1ID, gotIm2ID, gotErr := repo.DeleteRequest(context.Background(), tc.userID, tc.reqID)
+
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
+			}
+
+			if gotIm1ID != tc.wantIm1ID {
+				t.Errorf("Want image 1 id: %v, got image 1 id: %v", tc.wantIm1ID, gotIm1ID)
+			}
+
+			if gotIm2ID != tc.wantIm2ID {
+				t.Errorf("Want image 2 id: %v, got image 2 id: %v", tc.wantIm1ID, gotIm1ID)
+			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were fulfilled expectations: %s", err)
+			}
+		})
+	}
+}
+
+func TestDeleteImage(t *testing.T) {
+	testCases := []struct {
+		testName string
+		userID   int
+		imageID  int
+		repoURL  string
+		wantURL  string
+		wantErr  error
+	}{
+		{
+			testName: "all is good",
+			userID:   12,
+			imageID:  23,
+			repoURL:  "url to image",
+			wantURL:  "url to image",
+			wantErr:  nil,
+		},
+	}
+
+	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = .+ AND id = .+ RETURNING image_url`, repository.ImageTable)
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			repo, mock := NewReqMock(t)
+
+			rows := sqlmock.NewRows([]string{"image_url"})
+
+			if tc.repoURL != "" {
+				rows = rows.AddRow(tc.repoURL)
+			}
+
+			mock.ExpectQuery(query).WithArgs(tc.userID, tc.imageID).WillReturnRows(rows)
+
+			gotURL, gotErr := repo.DeleteImage(context.Background(), tc.userID, tc.imageID)
+
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
+			}
+			if gotURL != tc.wantURL {
+				t.Errorf("Want url: %v, got url: %v", tc.wantURL, gotURL)
 			}
 
 			if err := mock.ExpectationsWereMet(); err != nil {

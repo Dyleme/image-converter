@@ -35,7 +35,8 @@ func TestCreateUser(t *testing.T) {
 		},
 	}
 
-	query := fmt.Sprintf("INSERT INTO %s (nickname, email, password_hash) VALUES ($1, $2, $3) RETURNING id", repository.UsersTable)
+	query := fmt.Sprintf(`INSERT INTO %s (nickname, email, password_hash)
+	 VALUES ($1, $2, $3) RETURNING id`, repository.UsersTable)
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {

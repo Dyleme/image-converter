@@ -285,7 +285,6 @@ func (s *RequestService) DeleteRequest(ctx context.Context, userID, reqID int) e
 
 func (s *RequestService) uploadFile(ctx context.Context, bts []byte,
 	fileName string, userID int) (string, error) {
-
 	newURL, err := s.storage.UploadFile(ctx, userID, fileName, bts)
 	if err != nil {
 		return "", err
