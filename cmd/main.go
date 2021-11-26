@@ -58,7 +58,7 @@ func main() {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
 
-	authService := service.NewAuthSevice(authRep)
+	authService := service.NewAuthSevice(authRep, &service.HashGen{}, &service.JwtGen{})
 	reqService := service.NewRequestService(reqRep, stor, imageConvertorsAmount)
 	downService := service.NewDownloadSerivce(downRep, stor)
 	handlers := handler.New(authService, reqService, downService, logger)

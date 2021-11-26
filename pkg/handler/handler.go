@@ -2,7 +2,7 @@ package handler
 
 import (
 	"context"
-	"mime/multipart"
+	"io"
 	"net/http"
 
 	"github.com/Dyleme/image-coverter/pkg/model"
@@ -30,7 +30,7 @@ type Requester interface {
 	GetRequests(ctx context.Context, userID int) ([]model.Request, error)
 	GetRequest(ctx context.Context, userID int, reqID int) (*model.Request, error)
 	DeleteRequest(ctx context.Context, userID int, reqID int) error
-	AddRequest(context.Context, int, multipart.File, string, model.ConversionInfo) (int, error)
+	AddRequest(context.Context, int, io.Reader, string, model.ConversionInfo) (int, error)
 }
 
 type Downloader interface {

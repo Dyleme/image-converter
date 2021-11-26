@@ -3,11 +3,11 @@ package service
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"image/jpeg"
 	"image/png"
 	"io"
-	"mime/multipart"
 	"strings"
 	"time"
 
@@ -28,6 +28,8 @@ const (
 const (
 	jpegQuality = 100
 )
+
+var ErrUnsupportedType = errors.New("unsopported type")
 
 type Requester interface {
 	GetRequests(ctx context.Context, id int) ([]model.Request, error)
@@ -147,10 +149,15 @@ func (s *RequestService) GetRequests(ctx context.Context, userID int) ([]model.R
 	return reqs, nil
 }
 
-func (s *RequestService) AddRequest(ctx context.Context, userID int, file multipart.File,
+func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Reader,
 	fileName string, convInfo model.ConversionInfo) (int, error) {
 	reqTime := time.Now()
 	pointIndex := strings.LastIndex(fileName, ".")
+
+	if pointIndex == -1 {
+		return 0, fmt.Errorf("no point in filename")
+	}
+
 	oldType := fileName[pointIndex+1:]
 
 	fileData, err := io.ReadAll(file)
@@ -216,7 +223,7 @@ func decodeImage(r io.Reader, oldType string) (image.Image, error) {
 	case jpegType:
 		return jpeg.Decode(r)
 	default:
-		return nil, fmt.Errorf("can not work with this type")
+		return nil, ErrUnsupportedType
 	}
 }
 
@@ -237,7 +244,7 @@ func encodeImage(i image.Image, fileType string) ([]byte, error) {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("unknown type of image")
+		return nil, ErrUnsupportedType
 	}
 
 	return bf.Bytes(), nil

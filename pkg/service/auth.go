@@ -14,21 +14,51 @@ const (
 	tokenTTL = 4 * time.Hour
 )
 
+type HashGenerator interface {
+	GeneratePasswordHash(password string) string
+	IsValidPassword(password string, hash []byte) bool
+}
+
+type HashGen struct{}
+
+func (h *HashGen) GeneratePasswordHash(password string) string {
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	return string(hash)
+}
+
+func (h *HashGen) IsValidPassword(password string, hash []byte) bool {
+	errNotEqual := bcrypt.CompareHashAndPassword(hash, []byte(password))
+
+	return errNotEqual == nil
+}
+
 type Autharizater interface {
 	CreateUser(ctx context.Context, user model.User) (int, error)
 	GetPasswordAndID(ctx context.Context, nickname string) (hash []byte, userID int, err error)
 }
 
-type AuthService struct {
-	repo Autharizater
+type JwtGen struct{}
+
+func NewJwtGen() *JwtGen {
+	return &JwtGen{}
 }
 
-func NewAuthSevice(repo Autharizater) *AuthService {
-	return &AuthService{repo: repo}
+func (gen *JwtGen) CreateToken(ctx context.Context, tokenTTL time.Duration, id int) (string, error) {
+	return jwt.CreateToken(ctx, tokenTTL, id)
+}
+
+type AuthService struct {
+	repo    Autharizater
+	hashGen HashGenerator
+	jwtGen  JwtGenerator
+}
+
+func NewAuthSevice(repo Autharizater, hashGen HashGenerator, jwtGen JwtGenerator) *AuthService {
+	return &AuthService{repo: repo, hashGen: hashGen, jwtGen: jwtGen}
 }
 
 func (s *AuthService) CreateUser(ctx context.Context, user model.User) (int, error) {
-	user.Password = generatePasswordHash(user.Password)
+	user.Password = s.hashGen.GeneratePasswordHash(user.Password)
 	return s.repo.CreateUser(ctx, user)
 }
 
@@ -40,20 +70,9 @@ func (s *AuthService) ValidateUser(ctx context.Context, user model.User) (string
 		return "", ErrWrongPassword
 	}
 
-	if !isValidPassword(user.Password, hash) {
+	if !s.hashGen.IsValidPassword(user.Password, hash) {
 		return "", ErrWrongPassword
 	}
 
-	return jwt.CreateToken(ctx, tokenTTL, id)
-}
-
-func generatePasswordHash(password string) string {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
-	return string(hash)
-}
-
-func isValidPassword(password string, hash []byte) bool {
-	errNotEqual := bcrypt.CompareHashAndPassword(hash, []byte(password))
-
-	return errNotEqual == nil
+	return s.jwtGen.CreateToken(ctx, tokenTTL, id)
 }
