@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Dyleme/image-coverter/pkg/conversion"
-	"github.com/Dyleme/image-coverter/pkg/logging"
-	"github.com/Dyleme/image-coverter/pkg/model"
-	"github.com/Dyleme/image-coverter/pkg/repository"
+	"github.com/Dyleme/image-coverter/internal/conversion"
+	"github.com/Dyleme/image-coverter/internal/logging"
+	"github.com/Dyleme/image-coverter/internal/model"
+	"github.com/Dyleme/image-coverter/internal/repository"
 	"github.com/sirupsen/logrus"
 
 	"image"

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Dyleme/image-coverter/pkg/model"
+	"github.com/Dyleme/image-coverter/internal/model"
 )
 
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {

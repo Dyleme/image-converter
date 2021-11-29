@@ -8,12 +8,12 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
-	"github.com/Dyleme/image-coverter/pkg/handler"
-	"github.com/Dyleme/image-coverter/pkg/logging"
-	"github.com/Dyleme/image-coverter/pkg/repository"
-	"github.com/Dyleme/image-coverter/pkg/server"
-	"github.com/Dyleme/image-coverter/pkg/service"
-	"github.com/Dyleme/image-coverter/pkg/storage"
+	"github.com/Dyleme/image-coverter/internal/handler"
+	"github.com/Dyleme/image-coverter/internal/logging"
+	"github.com/Dyleme/image-coverter/internal/repository"
+	"github.com/Dyleme/image-coverter/internal/server"
+	"github.com/Dyleme/image-coverter/internal/service"
+	"github.com/Dyleme/image-coverter/internal/storage"
 )
 
 const imageConvertorsAmount = 5

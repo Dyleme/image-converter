@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/Dyleme/image-coverter/pkg/model"
-	"github.com/Dyleme/image-coverter/pkg/repository"
+	"github.com/Dyleme/image-coverter/internal/model"
+	"github.com/Dyleme/image-coverter/internal/repository"
 )
 
 func TestCreateUser(t *testing.T) {

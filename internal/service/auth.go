@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Dyleme/image-coverter/pkg/jwt"
-	"github.com/Dyleme/image-coverter/pkg/model"
+	"github.com/Dyleme/image-coverter/internal/jwt"
+	"github.com/Dyleme/image-coverter/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
 

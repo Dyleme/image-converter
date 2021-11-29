@@ -19,10 +19,6 @@ require (
 require (
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.6
-	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
-	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
-	golang.org/x/text v0.3.3 // indirect
 )
 
 require github.com/stretchr/testify v1.7.0 // indirect

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/Dyleme/image-coverter/pkg/model"
+	"github.com/Dyleme/image-coverter/internal/model"
 )
 
 type AuthPostgres struct {

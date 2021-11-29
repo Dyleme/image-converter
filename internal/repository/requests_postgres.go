@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Dyleme/image-coverter/pkg/model"
+	"github.com/Dyleme/image-coverter/internal/model"
 )
 
 type ReqPostgres struct {

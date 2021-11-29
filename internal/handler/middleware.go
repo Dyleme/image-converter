@@ -9,7 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/Dyleme/image-coverter/pkg/jwt"
+	"github.com/Dyleme/image-coverter/internal/jwt"
 )
 
 const (

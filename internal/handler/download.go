@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Dyleme/image-coverter/pkg/jwt"
+	"github.com/Dyleme/image-coverter/internal/jwt"
 	"github.com/gorilla/mux"
 )
 

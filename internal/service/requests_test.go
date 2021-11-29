@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Dyleme/image-coverter/pkg/model"
-	"github.com/Dyleme/image-coverter/pkg/service"
-	"github.com/Dyleme/image-coverter/pkg/service/mocks"
-	"github.com/Dyleme/image-coverter/pkg/storage"
+	"github.com/Dyleme/image-coverter/internal/model"
+	"github.com/Dyleme/image-coverter/internal/service"
+	"github.com/Dyleme/image-coverter/internal/service/mocks"
+	"github.com/Dyleme/image-coverter/internal/storage"
 	"github.com/golang/mock/gomock"
 )
 

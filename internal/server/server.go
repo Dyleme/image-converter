@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/Dyleme/image-coverter/pkg/logging"
+	"github.com/Dyleme/image-coverter/internal/logging"
 )
 
 const (

@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	model "github.com/Dyleme/image-coverter/pkg/model"
+	model "github.com/Dyleme/image-coverter/internal/model"
 	gomock "github.com/golang/mock/gomock"
 )
 
