@@ -21,7 +21,7 @@ const imageConvertorsAmount = 5
 func main() {
 	logger := logging.NewLogger()
 
-	err := godotenv.Load()
+	err := godotenv.Load("C:\\Users\\Aliaksei.Dziauho\\program\\image-coverter\\.env")
 	if err != nil {
 		logger.Fatal(err)
 	}

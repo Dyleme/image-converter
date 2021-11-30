@@ -330,10 +330,10 @@ func TestAddImage(t *testing.T) {
 			testName: "all is good",
 			userID:   12,
 			imageInfo: &model.Info{
-				ResoultionX: 2040,
-				ResoultionY: 1020,
-				Type:        "png",
-				URL:         "url to image",
+				Width:  2040,
+				Height: 1020,
+				Type:   "png",
+				URL:    "url to image",
 			},
 			repoID:  23,
 			wantID:  23,
@@ -350,7 +350,7 @@ func TestAddImage(t *testing.T) {
 
 			rows := RepoReturnID(repo, tc.repoID)
 
-			mock.ExpectQuery(query).WithArgs(tc.imageInfo.ResoultionX, tc.imageInfo.ResoultionY,
+			mock.ExpectQuery(query).WithArgs(tc.imageInfo.Width, tc.imageInfo.Height,
 				tc.imageInfo.Type, tc.imageInfo.URL, tc.userID).WillReturnRows(rows)
 
 			gotID, gotErr := repo.AddImage(context.Background(), tc.userID, *tc.imageInfo)

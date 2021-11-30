@@ -144,7 +144,7 @@ func (r *ReqPostgres) AddProcessedTimeToRequest(ctx context.Context, reqID int, 
 func (r *ReqPostgres) AddImage(ctx context.Context, userID int, imageInfo model.Info) (int, error) {
 	query := fmt.Sprintf(`INSERT INTO %s (resoolution_x, resoolution_y, im_type, image_url, user_id)
 		VALUES ($1, $2, $3, $4, $5) RETURNING id;`, ImageTable)
-	row := r.db.QueryRow(query, imageInfo.ResoultionX, imageInfo.ResoultionY,
+	row := r.db.QueryRow(query, imageInfo.Width, imageInfo.Height,
 		imageInfo.Type, imageInfo.URL, userID)
 
 	var imageID int
