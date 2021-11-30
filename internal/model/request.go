@@ -22,8 +22,8 @@ type ConversionInfo struct {
 }
 
 type Info struct {
-	ResoultionX int
-	ResoultionY int
-	Type        string
-	URL         string
+	Width  int
+	Height int
+	Type   string
+	URL    string
 }

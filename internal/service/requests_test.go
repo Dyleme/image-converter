@@ -202,7 +202,7 @@ func loadImage(t *testing.T, path string) []byte {
 }
 
 func TestAddReqeust(t *testing.T) {
-	pngTestImage := loadImage(t, "C:\\Users\\Aliaksei.Dziauho\\program\\image-coverter\\pkg\\service\\test_data\\x.png")
+	pngTestImage := loadImage(t, "test_data\\x.png")
 
 	testCases := []struct {
 		testName      string

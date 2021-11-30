@@ -11,11 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Dyleme/image-coverter/internal/conversion"
-	"github.com/Dyleme/image-coverter/internal/logging"
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/repository"
-	"github.com/sirupsen/logrus"
 
 	"image"
 )
@@ -45,95 +42,26 @@ type Requester interface {
 
 type ConvesionData struct {
 	ctx       context.Context
-	imageInfo model.ConversionInfo
-	userID    int
-	reqID     int
-	pic       image.Image
-	fileName  string
+	ImageInfo model.ConversionInfo `json:"imageInfo"`
+	UserID    int                  `json:"userID"`
+	ReqID     int                  `json:"reqID"`
+	OldType   string               `json:"oldType"`
+	Pic       []byte               `json:"pic"`
+	FileName  string               `json:"fileName"`
 }
 
 type RequestService struct {
 	repo    Requester
 	storage Storager
-	req     chan *ConvesionData
-}
-
-func (s *RequestService) worker(ch <-chan *ConvesionData) {
-	for data := range ch {
-		s.convert(data)
-	}
-}
-
-func (s *RequestService) convert(data *ConvesionData) {
-	ctx := data.ctx
-	logger := logging.FromContext(ctx)
-
-	err := s.repo.UpdateRequestStatus(ctx, data.reqID, repository.StatusProcessing)
-	if err != nil {
-		logger.Warn(fmt.Errorf("repo update status in request: %w", err))
-	}
-
-	begin := time.Now()
-
-	logger.WithField("name", data.fileName).Info("start image conversion")
-
-	if data.imageInfo.Ratio != 1 {
-		data.pic = conversion.Convert(data.pic, data.imageInfo.Ratio)
-	}
-
-	pointIndex := strings.LastIndex(data.fileName, ".")
-	convFileName := data.fileName[:pointIndex] + "_conv." + data.imageInfo.Type
-
-	bts, err := encodeImage(data.pic, data.imageInfo.Type)
-	if err != nil {
-		logger.Warn(fmt.Errorf("encode image: %w", err))
-	}
-
-	newURL, err := s.uploadFile(ctx, bts, convFileName, data.userID)
-	if err != nil {
-		logger.Warn(fmt.Errorf("upload: %w", err))
-	}
-
-	newX, newY := getResolution(data.pic)
-	newImageInfo := model.Info{
-		ResoultionX: newX,
-		ResoultionY: newY,
-		URL:         newURL,
-		Type:        data.imageInfo.Type,
-	}
-
-	newImageID, err := s.repo.AddImage(ctx, data.userID, newImageInfo)
-	if err != nil {
-		logger.Warn(fmt.Errorf("repo add image: %w", err))
-	}
-
-	err = s.repo.AddProcessedImageIDToRequest(ctx, data.reqID, newImageID)
-	if err != nil {
-		logger.Warn(fmt.Errorf("repo update image in request: %w", err))
-	}
-
-	completionTime := time.Now()
-
-	err = s.repo.AddProcessedTimeToRequest(ctx, data.reqID, completionTime)
-	if err != nil {
-		logger.Warn(fmt.Errorf("repo update time in request: %w", err))
-	}
-
-	err = s.repo.UpdateRequestStatus(ctx, data.reqID, repository.StatusDone)
-	if err != nil {
-		logger.Warn(fmt.Errorf("repo update status in request: %w", err))
-	}
-
-	logger.WithFields(logrus.Fields{
-		"time for conversion": time.Since(begin),
-		"name":                data.fileName,
-	}).Info("end image conversion")
+	rabbit  *rabbitMQ
 }
 
 func NewRequestService(repo Requester, stor Storager, workersAmount uint) *RequestService {
-	s := &RequestService{repo: repo, storage: stor, req: make(chan *ConvesionData)}
-	for i := 0; i < int(workersAmount); i++ {
-		go s.worker(s.req)
+	s := &RequestService{repo: repo, storage: stor, rabbit: initRabbit()}
+	s.rabbit.Service = s
+
+	for i := 0; i < 2; i++ {
+		go s.rabbit.receive()
 	}
 
 	return s
@@ -175,12 +103,12 @@ func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Rea
 		return 0, fmt.Errorf("upload: %w", err)
 	}
 
-	x, y := getResolution(pic)
+	width, height := getResolution(pic)
 	imageInfo := model.Info{
-		ResoultionX: x,
-		ResoultionY: y,
-		URL:         url,
-		Type:        oldType,
+		Width:  width,
+		Height: height,
+		URL:    url,
+		Type:   oldType,
 	}
 
 	imageID, err := s.repo.AddImage(ctx, userID, imageInfo)
@@ -204,14 +132,15 @@ func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Rea
 
 	convertImageInfo := ConvesionData{
 		ctx:       ctx,
-		imageInfo: convInfo,
-		userID:    userID,
-		reqID:     reqID,
-		pic:       pic,
-		fileName:  fileName,
+		ImageInfo: convInfo,
+		UserID:    userID,
+		ReqID:     reqID,
+		OldType:   oldType,
+		Pic:       fileData,
+		FileName:  fileName,
 	}
 
-	go func() { s.req <- &convertImageInfo }()
+	s.rabbit.send(&convertImageInfo)
 
 	return reqID, nil
 }
