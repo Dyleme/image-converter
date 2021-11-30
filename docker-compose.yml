@@ -14,7 +14,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-     - ./data/storage:/storage/
+     - ./.docker/storage:/storage/
   postgresql:
     image: postgres:latest
     restart: always
@@ -29,7 +29,22 @@ services:
       - "5432:5432"
     volumes:
       - ./database/initialization.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./data/db:/var/lib/postgresql/data/
+      - ./.docker/db:/var/lib/postgresql/data/
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    hostname: "rabbitmq"
+    ports:
+     - 5672:5672
+     - 15672:15672
+    environment:
+     - RABBITMQ_DEFAULT_USER=${RBUSER}
+     - RABBITMQ_DEFAULT_PASS=${RBPASSWORD}
+    volumes: 
+     - ./.docker/rabbitmq/etc/:/etc/rabbitmq/
+     - ./.docker/rabbitmq/data/:/var/lib/rabbitmq/
+     - ./.docker/rabbitmq/logs/:/var/log/rabbitmq/
+
   api:
     build:
       context: .
@@ -43,6 +58,8 @@ services:
     depends_on:
       - postgresql
       - minio
+      - rabbitmq
+
 volumes:
   postgresql:
     driver: local

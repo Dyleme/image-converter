@@ -56,8 +56,8 @@ type RequestService struct {
 	rabbit  *rabbitMQ
 }
 
-func NewRequestService(repo Requester, stor Storager, workersAmount uint) *RequestService {
-	s := &RequestService{repo: repo, storage: stor, rabbit: initRabbit()}
+func NewRequestService(repo Requester, stor Storager, conf RabbitConfig) *RequestService {
+	s := &RequestService{repo: repo, storage: stor, rabbit: initRabbit(conf)}
 	s.rabbit.Service = s
 
 	for i := 0; i < 2; i++ {

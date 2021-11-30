@@ -21,8 +21,16 @@ type rabbitMQ struct {
 	ch      *amqp.Channel
 }
 
-func initRabbit() *rabbitMQ {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+type RabbitConfig struct {
+	User     string
+	Password string
+	Host     string
+}
+
+func initRabbit(c RabbitConfig) *rabbitMQ {
+	connStr := fmt.Sprintf("amqp://%s:%s@%s:5672/", c.User, c.Password, c.Host)
+	conn, err := amqp.Dial(connStr)
+
 	if err != nil {
 		logrus.Fatalf("unable to make connection to rabbitMQ: %v", err)
 	}

@@ -47,19 +47,26 @@ func main() {
 		logger.Fatalf("can't convert string to bool; %s", err)
 	}
 
-	stor, err := storage.NewMinioStorage(
-		os.Getenv("MNHOST")+":"+os.Getenv("MNPORT"),
-		os.Getenv("MNACCESSKEYID"),
-		os.Getenv("MNSECRETACCESSKEY"),
-		useMinioSSL,
-	)
+	minioConfig := storage.MinioConfig{
+		Endpoint:        os.Getenv("MNHOST") + ":" + os.Getenv("MNPORT"),
+		AccessKeyID:     os.Getenv("MNACCESSKEYID"),
+		SecretAccessKey: os.Getenv("MNSECRETACCESSKEY"),
+		UseSSL:          useMinioSSL,
+	}
+
+	stor, err := storage.NewMinioStorage(minioConfig)
 
 	if err != nil {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
 
 	authService := service.NewAuthSevice(authRep, &service.HashGen{}, &service.JwtGen{})
-	reqService := service.NewRequestService(reqRep, stor, imageConvertorsAmount)
+	rabbitConfig := service.RabbitConfig{
+		User:     os.Getenv("RBUSER"),
+		Password: os.Getenv("RBPASSWORD"),
+		Host:     os.Getenv("RBHOST"),
+	}
+	reqService := service.NewRequestService(reqRep, stor, rabbitConfig)
 	downService := service.NewDownloadSerivce(downRep, stor)
 	handlers := handler.New(authService, reqService, downService, logger)
 

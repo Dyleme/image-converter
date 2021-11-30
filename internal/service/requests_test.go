@@ -100,7 +100,7 @@ func TestGetRequests(t *testing.T) {
 			mockRequest := mocks.NewMockRequester(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
-			srvc := service.NewRequestService(mockRequest, mockStorage, 3)
+			srvc := service.NewRequestService(mockRequest, mockStorage, service.RabbitConfig{})
 			ctx := context.Background()
 
 			mockRequest.EXPECT().GetRequests(ctx, tc.userID).Return(tc.repReqs, tc.repErr)
@@ -173,7 +173,7 @@ func TestGetRequest(t *testing.T) {
 			mockRequest := mocks.NewMockRequester(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
-			srvc := service.NewRequestService(mockRequest, mockStorage, 3)
+			srvc := service.NewRequestService(mockRequest, mockStorage, service.RabbitConfig{})
 			ctx := context.Background()
 
 			mockRequest.EXPECT().GetRequest(ctx, tc.userID, tc.reqID).Return(tc.repReq, tc.repErr).Times(1)
@@ -277,7 +277,7 @@ func TestAddReqeust(t *testing.T) {
 			mockRequest := mocks.NewMockRequester(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
-			srvc := service.NewRequestService(mockRequest, mockStorage, 3)
+			srvc := service.NewRequestService(mockRequest, mockStorage, service.RabbitConfig{})
 			ctx := context.Background()
 
 			if tc.runUploadFile {
@@ -433,7 +433,7 @@ func TestDeleteReqeust(t *testing.T) {
 			mockRequest := mocks.NewMockRequester(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
-			srvc := service.NewRequestService(mockRequest, mockStorage, 3)
+			srvc := service.NewRequestService(mockRequest, mockStorage, service.RabbitConfig{})
 			ctx := context.Background()
 
 			mockRequest.EXPECT().DeleteRequest(ctx, tc.userID, tc.reqID).Return(tc.repo1ID, tc.repo2ID, tc.deleteReqErr)

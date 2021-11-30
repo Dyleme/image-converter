@@ -17,8 +17,15 @@ type MinioStorage struct {
 	client minio.Client
 }
 
-func NewMinioStorage(endpoint, accessKeyID, secretAccessKey string, useSSL bool) (*MinioStorage, error) {
-	cl, err := minio.New(endpoint, accessKeyID, secretAccessKey, useSSL)
+type MinioConfig struct {
+	Endpoint        string
+	AccessKeyID     string
+	SecretAccessKey string
+	UseSSL          bool
+}
+
+func NewMinioStorage(conf MinioConfig) (*MinioStorage, error) {
+	cl, err := minio.New(conf.Endpoint, conf.AccessKeyID, conf.SecretAccessKey, conf.UseSSL)
 	if err != nil {
 		return nil, err
 	}
