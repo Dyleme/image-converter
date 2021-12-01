@@ -21,6 +21,10 @@ var (
 	errStorage    = errors.New("error in storage")
 )
 
+type mockSender struct{}
+
+func (m *mockSender) ProcessImage(data *model.ConversionData) {}
+
 func TestGetRequests(t *testing.T) {
 	testCases := []struct {
 		testName string
@@ -100,7 +104,7 @@ func TestGetRequests(t *testing.T) {
 			mockRequest := mocks.NewMockRequester(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
-			srvc := service.NewRequestService(mockRequest, mockStorage, service.RabbitConfig{})
+			srvc := service.NewRequestService(mockRequest, mockStorage, mocks.NewMockImageProcesser(mockCtr))
 			ctx := context.Background()
 
 			mockRequest.EXPECT().GetRequests(ctx, tc.userID).Return(tc.repReqs, tc.repErr)
@@ -173,7 +177,7 @@ func TestGetRequest(t *testing.T) {
 			mockRequest := mocks.NewMockRequester(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
-			srvc := service.NewRequestService(mockRequest, mockStorage, service.RabbitConfig{})
+			srvc := service.NewRequestService(mockRequest, mockStorage, &mockSender{})
 			ctx := context.Background()
 
 			mockRequest.EXPECT().GetRequest(ctx, tc.userID, tc.reqID).Return(tc.repReq, tc.repErr).Times(1)
@@ -205,40 +209,42 @@ func TestAddReqeust(t *testing.T) {
 	pngTestImage := loadImage(t, "test_data\\x.png")
 
 	testCases := []struct {
-		testName      string
-		userID        int
-		file          *bytes.Buffer
-		fileName      string
-		imageID       int
-		imageRepoErr  error
-		imageURL      string
-		storageErr    error
-		convInfo      model.ConversionInfo
-		runUploadFile bool
-		runAddImage   bool
-		runAddRequest bool
-		repoReqID     int
-		reqRepoErr    error
-		wantReqID     int
-		wantErr       error
+		testName        string
+		userID          int
+		file            *bytes.Buffer
+		fileName        string
+		imageID         int
+		imageRepoErr    error
+		imageURL        string
+		storageErr      error
+		convInfo        model.ConversionInfo
+		runUploadFile   bool
+		runAddImage     bool
+		runAddRequest   bool
+		repoReqID       int
+		reqRepoErr      error
+		runProcessImage bool
+		wantReqID       int
+		wantErr         error
 	}{
-		// {
-		// 	testName: "all is good",
-		// 	userID:   123,
-		// 	file:     bytes.NewBuffer(pngTestImage),
-		// 	fileName: "filename.png",
-		// 	convInfo: model.ConversionInfo{
-		// 		Ratio: 0.5,
-		// 		Type:  "png",
-		// 	},
-		// 	runUploadFile: true,
-		// 	runAddImage:   true,
-		// 	runAddRequest: true,
-		// 	reqRepoErr:    nil,
-		// 	repoReqID:     15,
-		// 	wantReqID:     15,
-		// 	wantErr:       nil,
-		// },
+		{
+			testName: "all is good",
+			userID:   123,
+			file:     bytes.NewBuffer(pngTestImage),
+			fileName: "filename.png",
+			convInfo: model.ConversionInfo{
+				Ratio: 0.5,
+				Type:  "png",
+			},
+			runUploadFile:   true,
+			runAddImage:     true,
+			runAddRequest:   true,
+			reqRepoErr:      nil,
+			repoReqID:       15,
+			runProcessImage: true,
+			wantReqID:       15,
+			wantErr:         nil,
+		},
 		{
 			testName: "unknow file type",
 			userID:   123,
@@ -276,8 +282,9 @@ func TestAddReqeust(t *testing.T) {
 			defer mockCtr.Finish()
 			mockRequest := mocks.NewMockRequester(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
+			mockProcess := mocks.NewMockImageProcesser(mockCtr)
 
-			srvc := service.NewRequestService(mockRequest, mockStorage, service.RabbitConfig{})
+			srvc := service.NewRequestService(mockRequest, mockStorage, mockProcess)
 			ctx := context.Background()
 
 			if tc.runUploadFile {
@@ -290,6 +297,9 @@ func TestAddReqeust(t *testing.T) {
 
 			if tc.runAddRequest {
 				mockRequest.EXPECT().AddRequest(ctx, gomock.Any(), tc.userID).Return(tc.repoReqID, tc.reqRepoErr)
+			}
+			if tc.runProcessImage {
+				mockProcess.EXPECT().ProcessImage(gomock.Any())
 			}
 
 			gotReqID, gotErr := srvc.AddRequest(ctx, tc.userID, tc.file,
@@ -433,7 +443,7 @@ func TestDeleteReqeust(t *testing.T) {
 			mockRequest := mocks.NewMockRequester(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
-			srvc := service.NewRequestService(mockRequest, mockStorage, service.RabbitConfig{})
+			srvc := service.NewRequestService(mockRequest, mockStorage, &mockSender{})
 			ctx := context.Background()
 
 			mockRequest.EXPECT().DeleteRequest(ctx, tc.userID, tc.reqID).Return(tc.repo1ID, tc.repo2ID, tc.deleteReqErr)

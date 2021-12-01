@@ -48,13 +48,27 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.app
     restart: always
     env_file: .env
     hostname: "api.local"
     container_name: api
     ports:
       - "8080:8080"
+    depends_on:
+      - postgresql
+      - minio
+      - rabbitmq
+      - converter
+      
+  converter:
+    build:
+      context: .
+      dockerfile: Dockerfile.conv
+    restart: always
+    env_file: .env
+    hostname: "api.local"
+    container_name: conv
     depends_on:
       - postgresql
       - minio

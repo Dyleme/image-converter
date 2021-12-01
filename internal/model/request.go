@@ -15,15 +15,3 @@ type Request struct {
 	OriginalType   string    `json:"originalType"`
 	ProcessedType  string    `json:"processedType"`
 }
-
-type ConversionInfo struct {
-	Ratio float32 `json:"ratio"`
-	Type  string  `json:"newType"`
-}
-
-type Info struct {
-	Width  int
-	Height int
-	Type   string
-	URL    string
-}
