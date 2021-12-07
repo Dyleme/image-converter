@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"os"
-	"strconv"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -40,20 +39,7 @@ func main() {
 	authRep := repository.NewAuthPostgres(db)
 	reqRep := repository.NewReqPostgres(db)
 	downRep := repository.NewDownloadPostgres(db)
-
-	useMinioSSL, err := strconv.ParseBool(os.Getenv("MNUSESSL"))
-	if err != nil {
-		logger.Fatalf("can't convert string to bool; %s", err)
-	}
-
-	minioConfig := storage.MinioConfig{
-		Endpoint:        os.Getenv("MNHOST") + ":" + os.Getenv("MNPORT"),
-		AccessKeyID:     os.Getenv("MNACCESSKEYID"),
-		SecretAccessKey: os.Getenv("MNSECRETACCESSKEY"),
-		UseSSL:          useMinioSSL,
-	}
-
-	stor, err := storage.NewMinioStorage(minioConfig)
+	stor, err := storage.NewAwsStorage()
 
 	if err != nil {
 		logger.Fatalf("failed to initialize storage: %s", err)

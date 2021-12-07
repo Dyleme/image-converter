@@ -72,9 +72,7 @@ func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName stri
 		}
 	}
 
-	var bf bytes.Buffer
-
-	bf.Write(data)
+	bf := bytes.NewBuffer(data)
 
 	fileName = m.createPath(userID, fileName)
 
@@ -92,7 +90,7 @@ func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName stri
 		break
 	}
 
-	_, err = m.client.PutObject("images", fileName, &bf, int64(bf.Len()), minio.PutObjectOptions{})
+	_, err = m.client.PutObject("images", fileName, bf, int64(bf.Len()), minio.PutObjectOptions{})
 
 	if err != nil {
 		return "", err
