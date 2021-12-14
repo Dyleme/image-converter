@@ -21,9 +21,7 @@ func (d *DownloadPostgres) GetImageURL(ctx context.Context, userID, imageID int)
 
 	var urlImage string
 
-	err := row.Scan(&urlImage)
-
-	if err != nil {
+	if err := row.Scan(&urlImage); err != nil {
 		return "", fmt.Errorf("repo: %w", err)
 	}
 

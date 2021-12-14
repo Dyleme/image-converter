@@ -176,9 +176,7 @@ func (r *ReqPostgres) DeleteImage(ctx context.Context, userID, imageID int) (str
 
 	var url string
 
-	err := row.Scan(&url)
-
-	if err != nil {
+	if err := row.Scan(&url); err != nil {
 		return "", fmt.Errorf("repo: %w", err)
 	}
 
