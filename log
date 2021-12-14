@@ -1,0 +1,2 @@
+time="2021-11-16T15:30:26+03:00" level=info msg="request handled" reqest method=GET request path=/requests/17 time for answer=15.3488ms
+time="2021-11-16T15:30:31+03:00" level=fatal
