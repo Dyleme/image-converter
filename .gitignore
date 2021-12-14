@@ -16,3 +16,6 @@
 
 .env
 .vscode
+
+# Data for docker volume
+/.docker/*

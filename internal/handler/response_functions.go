@@ -1,8 +1,8 @@
-package controller
+package handler
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 )
 
@@ -11,7 +11,6 @@ type errorResponse struct {
 }
 
 func newErrorResponse(w http.ResponseWriter, statusCode int, message string) {
-	log.Println(message)
 	(w).Header().Set("Content-Type", "application/json; charset=utf-8")
 	(w).Header().Set("X-Content-Type-Options", "nosniff")
 
@@ -21,12 +20,12 @@ func newErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 		statusCode = http.StatusInternalServerError
 	}
 
-	w.Write(js) //nolint:errcheck // error can't appear
+	w.WriteHeader(statusCode)
 
-	(w).WriteHeader(statusCode)
+	fmt.Fprint(w, string(js))
 }
 
-func jsonResponse(w http.ResponseWriter, v interface{}) {
+func newJSONResponse(w http.ResponseWriter, v interface{}) {
 	js, err := json.Marshal(v)
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -34,5 +33,10 @@ func jsonResponse(w http.ResponseWriter, v interface{}) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(js) //nolint:errcheck // can't appear
+	fmt.Fprint(w, string(js))
+}
+
+func newDownloadFileResponce(w http.ResponseWriter, b []byte) {
+	w.Header().Add("Content-Disposition", "Attachment")
+	fmt.Fprint(w, string(b))
 }
