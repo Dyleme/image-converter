@@ -20,7 +20,7 @@ jobs:
       run: go build -v ./...
 
     - name: Ls
-      run:  ls .\internal\service\
+      run:  ls ./internal/service/
 
     - name: Test
       run: go test -v ./...
