@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
 	"github.com/Dyleme/image-coverter/internal/handler"
@@ -18,11 +17,6 @@ import (
 
 func main() {
 	logger := logging.NewLogger()
-
-	err := godotenv.Load()
-	if err != nil {
-		logger.Fatal(err)
-	}
 
 	db, err := repository.NewPostgresDB(&repository.DBConfig{
 		UserName: os.Getenv("DBUSERNAME"),
@@ -50,6 +44,7 @@ func main() {
 		User:     os.Getenv("RBUSER"),
 		Password: os.Getenv("RBPASSWORD"),
 		Host:     os.Getenv("RBHOST"),
+		Port:     os.Getenv("RBPORT"),
 	}
 	rabbitSender := rabbitmq.NewRabbitSender(rabbitConfig)
 	reqService := service.NewRequestService(reqRep, stor, rabbitSender)

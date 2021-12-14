@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
 	"github.com/Dyleme/image-coverter/internal/logging"
@@ -23,11 +22,6 @@ func (r *emptySender) ProcessImage(data *model.ConversionData) {
 func main() {
 	logger := logging.NewLogger()
 	ctx := logging.WithLogger(context.Background(), logger)
-
-	err := godotenv.Load()
-	if err != nil {
-		logger.Fatal(err)
-	}
 
 	db, err := repository.NewPostgresDB(&repository.DBConfig{
 		UserName: os.Getenv("DBUSERNAME"),
@@ -52,6 +46,7 @@ func main() {
 		User:     os.Getenv("RBUSER"),
 		Password: os.Getenv("RBPASSWORD"),
 		Host:     os.Getenv("RBHOST"),
+		Port:     os.Getenv("RBPORT"),
 	}
 
 	reqService := service.NewRequestService(reqRep, stor, &emptySender{})
