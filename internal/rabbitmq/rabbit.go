@@ -21,10 +21,11 @@ type Config struct {
 	User     string
 	Password string
 	Host     string
+	Port     string
 }
 
 func NewRabbitSender(c Config) *RabbitSender {
-	connStr := fmt.Sprintf("amqp://%s:%s@%s:5672/", c.User, c.Password, c.Host)
+	connStr := fmt.Sprintf("amqps://%s:%s@%s:%s/", c.User, c.Password, c.Host, c.Port)
 	conn, err := amqp.Dial(connStr)
 
 	if err != nil {
@@ -91,13 +92,13 @@ type Converter interface {
 	Convert(ctx context.Context, data *model.ConversionData) image.Image
 }
 
-type ResizedProcesser interface {
+type ResizingProcesser interface {
 	ProcessResizedImage(ctx context.Context, im image.Image, data *model.ConversionData)
 }
 
-func Receive(ctx context.Context, conv Converter, proc ResizedProcesser, conf Config) {
+func Receive(ctx context.Context, conv Converter, proc ResizingProcesser, conf Config) {
 	logger := logging.FromContext(ctx)
-	connStr := fmt.Sprintf("amqp://%s:%s@%s:5672/", conf.User, conf.Password, conf.Host)
+	connStr := fmt.Sprintf("amqps://%s:%s@%s:%s/", conf.User, conf.Password, conf.Host, conf.Port)
 	conn, err := amqp.Dial(connStr)
 
 	if err != nil {

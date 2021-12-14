@@ -1,80 +1,75 @@
 version: '3.3'
 services:
-  minio:
-    image: quay.io/minio/minio
-    restart: always
-    container_name: minio
-    command: server ${MNPATH} --console-address ":9001"
-    env_file: .env
-    hostname: "minio.local"
-    environment:
-      - MINIO_ROOT_USER=${MNACCESSKEYID}
-      - MINIO_ROOT_PASSWORD=${MNSECRETACCESSKEY}
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-     - ./.docker/storage:/storage/
-  postgresql:
-    image: postgres:latest
-    restart: always
-    container_name: postgres
-    env_file: .env
-    hostname: "postgresql.local"
-    environment:
-      - POSTGRES_USER=${DBUSERNAME}
-      - POSTGRES_PASSWORD=${DBPASSWORD}
-      - POSTGRES_DB=${DBNAME}
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./database/initialization.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./.docker/db:/var/lib/postgresql/data/
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: rabbitmq
-    hostname: "rabbitmq"
-    ports:
-     - 5672:5672
-     - 15672:15672
-    environment:
-     - RABBITMQ_DEFAULT_USER=${RBUSER}
-     - RABBITMQ_DEFAULT_PASS=${RBPASSWORD}
-    volumes: 
-     - ./.docker/rabbitmq/etc/:/etc/rabbitmq/
-     - ./.docker/rabbitmq/data/:/var/lib/rabbitmq/
-     - ./.docker/rabbitmq/logs/:/var/log/rabbitmq/
+  # minio:
+  #   image: quay.io/minio/minio
+  #   restart: always
+  #   container_name: minio
+  #   command: server ${MNPATH} --console-address ":9001"
+  #   env_file: .env
+  #   environment:
+  #     - MINIO_ROOT_USER=${MNACCESSKEYID}
+  #     - MINIO_ROOT_PASSWORD=${MNSECRETACCESSKEY}
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #    - ./.docker/storage:/storage/
+  # postgresql:
+  #   image: postgres:latest
+  #   restart: always
+  #   container_name: postgres
+  #   env_file: .env
+  #   environment:
+  #     - POSTGRES_USER=${DBUSERNAME}
+  #     - POSTGRES_PASSWORD=${DBPASSWORD}
+  #     - POSTGRES_DB=${DBNAME}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - ./database/initialization.sql:/docker-entrypoint-initdb.d/init.sql
+  #     - ./.docker/db:/var/lib/postgresql/data/
+  # rabbitmq:
+  #   image: rabbitmq:3-management-alpine
+  #   container_name: rabbitmq
+  #   ports:
+  #    - 5672:5672
+  #    - 15672:15672
+  #   environment:
+  #    - RABBITMQ_DEFAULT_USER=${RBUSER}
+  #    - RABBITMQ_DEFAULT_PASS=${RBPASSWORD}
+  #   volumes: 
+  #    - ./.docker/rabbitmq/etc/:/etc/rabbitmq/
+  #    - ./.docker/rabbitmq/data/:/var/lib/rabbitmq/
+  #    - ./.docker/rabbitmq/logs/:/var/log/rabbitmq/
 
   api:
+    image: dyleme/handler
     build:
       context: .
       dockerfile: Dockerfile.app
     restart: always
     env_file: .env
-    hostname: "api.local"
     container_name: api
     ports:
       - "8080:8080"
     depends_on:
-      - postgresql
-      - minio
-      - rabbitmq
+      # - postgresql
+      # - rabbitmq
       - converter
       
   converter:
+    image: dyleme/converter
     build:
       context: .
       dockerfile: Dockerfile.conv
     restart: always
     env_file: .env
-    hostname: "api.local"
     container_name: conv
-    depends_on:
-      - postgresql
-      - minio
-      - rabbitmq
+    # depends_on:
+      # - postgresql
+      # - rabbitmq
 
-volumes:
-  postgresql:
-    driver: local
-  database-data:
+# volumes:
+#   postgresql:
+#     driver: local
+#   database-data:

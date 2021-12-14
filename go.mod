@@ -8,7 +8,6 @@ require (
 	github.com/go-ini/ini v1.63.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gorilla/mux v1.8.0
-	github.com/joho/godotenv v1.4.0
 	github.com/lib/pq v1.10.3
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
