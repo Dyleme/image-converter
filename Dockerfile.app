@@ -10,5 +10,4 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/app/main.go
 FROM alpine:3.14.2
 WORKDIR /app
 COPY --from=builder ["/app/main", "/app"]
-COPY ["./.env", "/app"]
 CMD ["/app/main"]
