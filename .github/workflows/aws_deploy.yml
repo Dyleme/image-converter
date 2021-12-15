@@ -42,7 +42,7 @@ env:
   ECS_CONV_SERVICE: image-converter-convert
   ECS_CLUSTER: dziauho-image-convesion
 
-  ECS_HANDELR_TASK_DEFINITION: .aws/handler-task-definition.json 
+  ECS_HANDLER_TASK_DEFINITION: .aws/handler-task-definition.json 
   ECS_CONV_TASK_DEFINITION: .aws/conv-task-definition.json 
 
   HANDLER_CONTAINER_NAME: image-converter-handler
