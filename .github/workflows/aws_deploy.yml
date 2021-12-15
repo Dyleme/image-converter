@@ -35,8 +35,8 @@ on:
 env:
   AWS_REGION: eu-central-1
 
-  ECR_HANDLER_REPOSITORY: dziauho-image-handler
-  ECR_CONV_REPOSITORY: dziauho-image-conv
+  HANDLER_IMAGE: dyleme/handler
+  CONV_IMAGE: dyleme/converter
 
   ECS_HANDLER_SERVICE: image-converter-handler
   ECS_CONV_SERVICE: image-converter-convert
@@ -75,20 +75,36 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Extract metadata (tags, labels) for Docker
+    - name: Extract metadata (tags, labels) for handler Docker
       id: meta
       uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
       with:
-        images: dyleme/handler
-    
-    - name: Build and push Docker image
+        images: ${{ env.HANDLER_IMAGE }} 
+
+    - name: Build and push Docker handler image
       uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
       with:
         context: .
-        file: ./Dockerfile.app
+        file: ./Dockerfile.conv
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+
+    - name: Extract metadata (tags, labels) for converter Docker
+      id: meta
+      uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+      with:
+        images: ${{ env.CONV_IMAGE }} 
+
+    - name: Build and push Docker converter image
+      uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+      with:
+        context: .
+        file: ./Dockerfile.conv
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
 
     - name: Fill in the new handler image ID in the Amazon ECS task definition
       id: handler-task-def
@@ -96,7 +112,7 @@ jobs:
       with:
         task-definition: ${{ env.ECS_HANDLER_TASK_DEFINITION }}
         container-name: ${{ env.HANDLER_CONTAINER_NAME }}
-        image: ${{ steps.build-handler-image.outputs.image }}
+        image: ${{ env.HANDLER_IMAGE }}
 
     - name: Fill in the new conv image ID in the Amazon ECS task definition
       id: conv-task-def
@@ -104,7 +120,7 @@ jobs:
       with:
         task-definition: ${{ env.ECS_CONV_TASK_DEFINITION }}
         container-name: ${{ env.CONV_CONTAINER_NAME }}
-        image: ${{ steps.build-conv_image.outputs.image }}
+        image: ${{ env.CONV_IMAGE }}
 
     - name: Deploy Amazon ECS handler task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
