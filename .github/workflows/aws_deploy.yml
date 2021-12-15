@@ -125,7 +125,7 @@ jobs:
     - name: Deploy Amazon ECS handler task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: ${{ steps.task-def.outputs.handler-task-definition }}
+        task-definition: ${{ steps.handler-task-def.outputs.handler-task-definition }}
         service: ${{ env.ECS_HANDLER_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
@@ -133,7 +133,7 @@ jobs:
     - name: Deploy Amazon ECS conv task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: ${{ steps.task-def.outputs.conv-task-definition }}
+        task-definition: ${{ steps.conv-task-def.outputs.conv-task-definition }}
         service: ${{ env.ECS_CONV_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
