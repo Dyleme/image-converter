@@ -76,7 +76,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Extract metadata (tags, labels) for handler Docker
-      id: meta
+      id: handler_meta
       uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
       with:
         images: ${{ env.HANDLER_IMAGE }} 
@@ -87,11 +87,11 @@ jobs:
         context: .
         file: ./Dockerfile.conv
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: ${{ steps.handler_meta.outputs.tags }}
+        labels: ${{ steps.handler_meta.outputs.labels }}
 
     - name: Extract metadata (tags, labels) for converter Docker
-      id: meta
+      id: conv_meta
       uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
       with:
         images: ${{ env.CONV_IMAGE }} 
@@ -102,8 +102,8 @@ jobs:
         context: .
         file: ./Dockerfile.conv
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: ${{ steps.conv_meta.outputs.tags }}
+        labels: ${{ steps.conv_meta.outputs.labels }}
 
 
     - name: Fill in the new handler image ID in the Amazon ECS task definition
