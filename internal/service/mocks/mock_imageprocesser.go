@@ -7,7 +7,7 @@ package mocks
 import (
 	reflect "reflect"
 
-	model "github.com/Dyleme/image-coverter/internal/model"
+	"github.com/Dyleme/image-coverter/internal/rabbitmq"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -35,7 +35,7 @@ func (m *MockImageProcesser) EXPECT() *MockImageProcesserMockRecorder {
 }
 
 // ProcessImage mocks base method.
-func (m *MockImageProcesser) ProcessImage(arg0 *model.ConversionData) {
+func (m *MockImageProcesser) ProcessImage(arg0 *rabbitmq.ConversionData) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ProcessImage", arg0)
 }

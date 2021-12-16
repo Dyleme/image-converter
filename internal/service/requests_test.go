@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Dyleme/image-coverter/internal/model"
+	"github.com/Dyleme/image-coverter/internal/rabbitmq"
 	"github.com/Dyleme/image-coverter/internal/service"
 	"github.com/Dyleme/image-coverter/internal/service/mocks"
 	"github.com/Dyleme/image-coverter/internal/storage"
@@ -23,7 +24,7 @@ var (
 
 type mockSender struct{}
 
-func (m *mockSender) ProcessImage(data *model.ConversionData) {}
+func (m *mockSender) ProcessImage(data *rabbitmq.ConversionData) {}
 
 func TestGetRequests(t *testing.T) {
 	testCases := []struct {

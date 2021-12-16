@@ -26,6 +26,16 @@ type Config struct {
 
 var queueName = "convert"
 
+type ConversionData struct {
+	Ctx       context.Context
+	ImageInfo model.ConversionInfo `json:"imageInfo"`
+	UserID    int                  `json:"userID"`
+	ReqID     int                  `json:"reqID"`
+	OldType   string               `json:"oldType"`
+	Pic       []byte               `json:"pic"`
+	FileName  string               `json:"fileName"`
+}
+
 func NewRabbitSender(c Config) (*RabbitSender, error) {
 	connStr := fmt.Sprintf("amqps://%s:%s@%s:%s/", c.User, c.Password, c.Host, c.Port)
 	conn, err := amqp.Dial(connStr)
@@ -55,7 +65,7 @@ func NewRabbitSender(c Config) (*RabbitSender, error) {
 	return &RabbitSender{conn: conn, ch: ch}, nil
 }
 
-func (r *RabbitSender) ProcessImage(data *model.ConversionData) {
+func (r *RabbitSender) ProcessImage(data *ConversionData) {
 	r.SendJSON(data)
 }
 
@@ -95,8 +105,8 @@ func (r *RabbitSender) SendJSON(data interface{}) {
 }
 
 type Converter interface {
-	Convert(ctx context.Context, data *model.ConversionData) image.Image
-	ProcessResizedImage(ctx context.Context, im image.Image, data *model.ConversionData)
+	Convert(ctx context.Context, data *ConversionData) image.Image
+	ProcessResizedImage(ctx context.Context, im image.Image, data *ConversionData)
 }
 
 func Receive(ctx context.Context, conv Converter, conf Config) {
@@ -155,7 +165,7 @@ func Receive(ctx context.Context, conv Converter, conf Config) {
 		for d := range msgs {
 			logger.Println("get conversion reqeust")
 
-			var data model.ConversionData
+			var data ConversionData
 			err := json.Unmarshal(d.Body, &data)
 
 			if err != nil {

@@ -10,6 +10,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// AllRequstHandler is handler which get all reqests by the userID.
+// User id is getted from context.
+// Handler calls service method GetRequest.
+// Method response with json representation of request or error, if any occurs.
 func (h *Handler) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -28,6 +32,12 @@ func (h *Handler) AllRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	newJSONResponse(w, reqs)
 }
 
+// AddRequstHandler is handler which add an reqest.
+// Method response with request id or error, if any occurs.
+// User id is getted from context.
+// File is getted like a part from multipartForm.
+// Information about convetsion is took like a part of multopartForm.
+// Handler calls service method AddRequest.
 func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -70,6 +80,11 @@ func (h *Handler) AddRequestHandler(w http.ResponseWriter, r *http.Request) {
 	newJSONResponse(w, m)
 }
 
+// GetRequstHandler is handler which get one reqest.
+// Method response with the json representation of request id or error, if any occurs.
+// User id is getted from context.
+// Request id is getted from query.
+// Handler calls service method GetRequest.
 func (h *Handler) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -102,6 +117,11 @@ func (h *Handler) GetRequestHandler(w http.ResponseWriter, r *http.Request) {
 	newJSONResponse(w, request)
 }
 
+// DeleteRequstHandler is handler which delete one reqest.
+// Method response with the id of deleted request or error, if any occurs.
+// User id is getted from context.
+// Request id is getted from query.
+// Handler calls service method DeleteRequest.
 func (h *Handler) DeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

@@ -8,6 +8,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// DownloadImageHandler is Handler which response with image bytes.
+// Handler get image id from query.
+// Calls service method DownloadImage with image id and user id which is getted from context.
+// If any error occurs than it response with error body.
 func (h *Handler) DownloadImageHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

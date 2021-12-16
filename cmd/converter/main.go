@@ -7,7 +7,6 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/Dyleme/image-coverter/internal/logging"
-	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/rabbitmq"
 	"github.com/Dyleme/image-coverter/internal/repository"
 	"github.com/Dyleme/image-coverter/internal/service"
@@ -16,7 +15,7 @@ import (
 
 type emptySender struct{}
 
-func (r *emptySender) ProcessImage(data *model.ConversionData) {
+func (r *emptySender) ProcessImage(data *rabbitmq.ConversionData) {
 }
 
 func main() {

@@ -20,6 +20,8 @@ type AwsStorage struct {
 	downloader *s3manager.Downloader
 }
 
+// Initialize AWS S3 storage using environment values.
+// Return error if any occurs while initializing session.
 func NewAwsStorage() (*AwsStorage, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("eu-central-1"),
@@ -34,6 +36,8 @@ func NewAwsStorage() (*AwsStorage, error) {
 	return &AwsStorage{session: sess, uploader: uploader, downloader: downloader}, nil
 }
 
+// GetFile is used to get file from S3 storage.
+// Returns an error, any occurs.
 func (a *AwsStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
 	logger := logging.FromContext(ctx)
 	logger.Infof("getting file %v", path)
@@ -58,6 +62,8 @@ func (a *AwsStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// UploadFile upload a file to s3 storage.
+// Filename is generated like uuid. but file extension ramains the same.
 func (a *AwsStorage) UploadFile(ctx context.Context, userID int, fileName string, data []byte) (string, error) {
 	logger := logging.FromContext(ctx)
 	logger.Infof("getting file %v", fileName)
@@ -78,6 +84,8 @@ func (a *AwsStorage) UploadFile(ctx context.Context, userID int, fileName string
 	return fileName, nil
 }
 
+// DeleteFile delet a file from s3 storage.
+// Return an error if any occurs.
 func (a *AwsStorage) DeleteFile(ctx context.Context, path string) error {
 	svc := s3.New(a.session)
 

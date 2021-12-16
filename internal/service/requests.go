@@ -14,6 +14,7 @@ import (
 	"github.com/Dyleme/image-coverter/internal/conversion"
 	"github.com/Dyleme/image-coverter/internal/logging"
 	"github.com/Dyleme/image-coverter/internal/model"
+	"github.com/Dyleme/image-coverter/internal/rabbitmq"
 	"github.com/Dyleme/image-coverter/internal/repository"
 	"github.com/sirupsen/logrus"
 
@@ -50,7 +51,7 @@ type RequestService struct {
 }
 
 type ImageProcesser interface {
-	ProcessImage(data *model.ConversionData)
+	ProcessImage(data *rabbitmq.ConversionData)
 }
 
 func NewRequestService(repo Requester, stor Storager, proc ImageProcesser) *RequestService {
@@ -119,7 +120,7 @@ func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Rea
 		return 0, fmt.Errorf("repo add request: %w", err)
 	}
 
-	convertImageData := model.ConversionData{
+	convertImageData := rabbitmq.ConversionData{
 		Ctx:       ctx,
 		ImageInfo: convInfo,
 		UserID:    userID,
@@ -216,7 +217,7 @@ func (s *RequestService) uploadFile(ctx context.Context, bts []byte,
 	return newURL, nil
 }
 
-func (s *RequestService) Convert(ctx context.Context, data *model.ConversionData) image.Image {
+func (s *RequestService) Convert(ctx context.Context, data *rabbitmq.ConversionData) image.Image {
 	logger := logging.FromContext(ctx)
 
 	err := s.repo.UpdateRequestStatus(ctx, data.ReqID, repository.StatusProcessing)
@@ -245,7 +246,7 @@ func (s *RequestService) Convert(ctx context.Context, data *model.ConversionData
 	return im
 }
 
-func (s *RequestService) ProcessResizedImage(ctx context.Context, im image.Image, data *model.ConversionData) {
+func (s *RequestService) ProcessResizedImage(ctx context.Context, im image.Image, data *rabbitmq.ConversionData) {
 	logger := logging.FromContext(ctx)
 	pointIndex := strings.LastIndex(data.FileName, ".")
 	convFileName := data.FileName[:pointIndex] + "_conv." + data.ImageInfo.Type
