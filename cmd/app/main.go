@@ -33,22 +33,28 @@ func main() {
 	authRep := repository.NewAuthPostgres(db)
 	reqRep := repository.NewReqPostgres(db)
 	downRep := repository.NewDownloadPostgres(db)
-	stor, err := storage.NewAwsStorage()
 
+	stor, err := storage.NewAwsStorage()
 	if err != nil {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
 
-	authService := service.NewAuthSevice(authRep, &service.HashGen{}, &service.JwtGen{})
 	rabbitConfig := rabbitmq.Config{
 		User:     os.Getenv("RBUSER"),
 		Password: os.Getenv("RBPASSWORD"),
 		Host:     os.Getenv("RBHOST"),
 		Port:     os.Getenv("RBPORT"),
 	}
-	rabbitSender := rabbitmq.NewRabbitSender(rabbitConfig)
+
+	rabbitSender, err := rabbitmq.NewRabbitSender(rabbitConfig)
+	if err != nil {
+		logger.Fatalf("failed to make connection to rabbitmq: %s", err)
+	}
+
+	authService := service.NewAuthSevice(authRep, &service.HashGen{}, &service.JwtGen{})
 	reqService := service.NewRequestService(reqRep, stor, rabbitSender)
 	downService := service.NewDownloadSerivce(downRep, stor)
+
 	handlers := handler.New(authService, reqService, downService, logger)
 
 	port := os.Getenv("PORT")

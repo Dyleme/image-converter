@@ -21,6 +21,7 @@ const (
 func (h *Handler) checkJWT(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
 		authHeader, exist := r.Header[AuthorizationHeader]
 		if !exist {
 			newErrorResponse(w, http.StatusUnauthorized, "empty auth header")

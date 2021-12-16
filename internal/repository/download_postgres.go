@@ -16,7 +16,6 @@ func NewDownloadPostgres(db *sql.DB) *DownloadPostgres {
 
 func (d *DownloadPostgres) GetImageURL(ctx context.Context, userID, imageID int) (string, error) {
 	query := fmt.Sprintf(`SELECT image_url FROM %s WHERE user_id = $1 AND id = $2`, ImageTable)
-
 	row := d.db.QueryRow(query, userID, imageID)
 
 	var urlImage string

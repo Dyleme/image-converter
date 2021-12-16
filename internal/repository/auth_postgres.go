@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/Dyleme/image-coverter/internal/model"
@@ -16,6 +17,8 @@ func NewAuthPostgres(db *sql.DB) *AuthPostgres {
 	return &AuthPostgres{db: db}
 }
 
+var ErrUserNotExist = errors.New("such user not exist")
+
 func (r *AuthPostgres) CreateUser(ctx context.Context, user model.User) (int, error) {
 	query := fmt.Sprintf("INSERT INTO %s (nickname, email, password_hash) VALUES ($1, $2, $3) RETURNING id", UsersTable)
 	row := r.db.QueryRow(query, user.Nickname, user.Email, user.Password)
@@ -28,12 +31,12 @@ func (r *AuthPostgres) CreateUser(ctx context.Context, user model.User) (int, er
 	return id, nil
 }
 
-func (r *AuthPostgres) GetPasswordAndID(ctx context.Context, nickname string) (hash []byte, userID int, err error) {
+func (r *AuthPostgres) GetPasswordHashAndID(ctx context.Context, nickname string) (hash []byte, userID int, err error) {
 	query := fmt.Sprintf("SELECT password_hash, id FROM %s WHERE nickname = $1", UsersTable)
 	row := r.db.QueryRow(query, nickname)
 
 	if row == nil {
-		return nil, 0, fmt.Errorf("repo: %w", err)
+		return nil, 0, fmt.Errorf("repo: %w", ErrUserNotExist)
 	}
 
 	if err := row.Scan(&hash, &userID); err != nil {

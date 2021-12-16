@@ -34,7 +34,7 @@ func (h *HashGen) IsValidPassword(password string, hash []byte) bool {
 
 type Autharizater interface {
 	CreateUser(ctx context.Context, user model.User) (int, error)
-	GetPasswordAndID(ctx context.Context, nickname string) (hash []byte, userID int, err error)
+	GetPasswordHashAndID(ctx context.Context, nickname string) (hash []byte, userID int, err error)
 }
 
 type JwtGen struct{}
@@ -65,9 +65,9 @@ func (s *AuthService) CreateUser(ctx context.Context, user model.User) (int, err
 var ErrWrongPassword = errors.New("wrong password")
 
 func (s *AuthService) ValidateUser(ctx context.Context, user model.User) (string, error) {
-	hash, id, err := s.repo.GetPasswordAndID(ctx, user.Nickname)
+	hash, id, err := s.repo.GetPasswordHashAndID(ctx, user.Nickname)
 	if err != nil {
-		return "", ErrWrongPassword
+		return "", err
 	}
 
 	if !s.hashGen.IsValidPassword(user.Password, hash) {

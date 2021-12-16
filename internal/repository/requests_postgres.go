@@ -22,7 +22,6 @@ func (r *ReqPostgres) GetRequests(ctx context.Context, userID int) ([]model.Requ
 	 processed_id, ratio, original_type, processed_type FROM %s WHERE user_id = $1`, RequestTable)
 
 	rows, err := r.db.Query(query, userID)
-
 	if err != nil {
 		return nil, fmt.Errorf("repo: %w", err)
 	}
@@ -62,19 +61,17 @@ func (r *ReqPostgres) GetRequests(ctx context.Context, userID int) ([]model.Requ
 func (r *ReqPostgres) GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error) {
 	query := fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
 	 processed_id, ratio, original_type, processed_type FROM %s WHERE id = $1 and user_id = $2`, RequestTable)
-
 	row := r.db.QueryRow(query, reqID, userID)
 
-	var req model.Request
-
-	var complTime sql.NullTime
-
-	var processedID sql.NullInt64
+	var (
+		req         model.Request
+		complTime   sql.NullTime
+		processedID sql.NullInt64
+	)
 
 	err := row.Scan(&req.ID, &req.OpStatus, &req.RequestTime, &complTime,
 		&req.OriginalID, &processedID, &req.Ratio,
 		&req.OriginalType, &req.ProcessedType)
-
 	if err != nil {
 		return nil, fmt.Errorf("repo: %w", err)
 	}
@@ -148,6 +145,7 @@ func (r *ReqPostgres) AddImage(ctx context.Context, userID int, imageInfo model.
 		imageInfo.Type, imageInfo.URL, userID)
 
 	var imageID int
+
 	if err := row.Scan(&imageID); err != nil {
 		return 0, fmt.Errorf("repo: %w", err)
 	}
@@ -157,12 +155,9 @@ func (r *ReqPostgres) AddImage(ctx context.Context, userID int, imageInfo model.
 
 func (r *ReqPostgres) DeleteRequest(ctx context.Context, userID, reqID int) (im1id, im2id int, err error) {
 	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING original_id, processed_id`, RequestTable)
-
 	row := r.db.QueryRow(query, userID, reqID)
 
-	err = row.Scan(&im1id, &im2id)
-
-	if err != nil {
+	if err := row.Scan(&im1id, &im2id); err != nil {
 		return 0, 0, fmt.Errorf("repo: %w", err)
 	}
 
@@ -171,7 +166,6 @@ func (r *ReqPostgres) DeleteRequest(ctx context.Context, userID, reqID int) (im1
 
 func (r *ReqPostgres) DeleteImage(ctx context.Context, userID, imageID int) (string, error) {
 	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING image_url`, ImageTable)
-
 	row := r.db.QueryRow(query, userID, imageID)
 
 	var url string

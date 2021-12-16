@@ -43,7 +43,7 @@ func (h *Handler) InitRouters() *mux.Router {
 	authRouter := router.NewRoute().Subrouter()
 
 	router.HandleFunc("/auth/register", h.RegiterHandler).Methods(http.MethodPost)
-	router.HandleFunc("/auth/login", h.LoginHandler)
+	router.HandleFunc("/auth/login", h.LoginHandler).Methods(http.MethodPost)
 
 	authRouter.HandleFunc("/requests", h.AllRequestsHandler).Methods(http.MethodGet)
 	authRouter.HandleFunc("/requests/image", h.AddRequestHandler).Methods(http.MethodPost)

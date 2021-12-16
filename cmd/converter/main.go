@@ -36,8 +36,8 @@ func main() {
 	}
 
 	reqRep := repository.NewReqPostgres(db)
-	stor, err := storage.NewAwsStorage()
 
+	stor, err := storage.NewAwsStorage()
 	if err != nil {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
@@ -51,5 +51,5 @@ func main() {
 
 	reqService := service.NewRequestService(reqRep, stor, &emptySender{})
 
-	rabbitmq.Receive(ctx, reqService, reqService, rabbitConfig)
+	rabbitmq.Receive(ctx, reqService, rabbitConfig)
 }

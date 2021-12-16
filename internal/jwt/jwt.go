@@ -21,7 +21,7 @@ const (
 
 var ErrTokenClaimsInvalidType = errors.New("token claims are not of the type MapClaims")
 
-var ErrContextHaveNotUser = errors.New("can't get user from context")
+var ErrContextWithoutUser = errors.New("can't get user from context")
 
 type UnexpectedSingingMethodError struct {
 	method interface{}
@@ -79,7 +79,7 @@ func GetUserFromContext(ctx context.Context) (int, error) {
 	userID, ok := ctx.Value(KeyUserID).(int)
 
 	if !ok {
-		return 0, ErrContextHaveNotUser
+		return 0, ErrContextWithoutUser
 	}
 
 	return userID, nil

@@ -24,17 +24,21 @@ type Config struct {
 	Port     string
 }
 
-func NewRabbitSender(c Config) *RabbitSender {
+var queueName = "convert"
+
+func NewRabbitSender(c Config) (*RabbitSender, error) {
 	connStr := fmt.Sprintf("amqps://%s:%s@%s:%s/", c.User, c.Password, c.Host, c.Port)
 	conn, err := amqp.Dial(connStr)
 
 	if err != nil {
 		logrus.Fatalf("unable to make connection to rabbitMQ: %v", err)
+		return nil, fmt.Errorf("unable to make connection to rabbitMQ: %w", err)
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
 		logrus.Fatalf("falied in open a channel: %v", err)
+		return nil, fmt.Errorf("falied in open a channel: %w", err)
 	}
 
 	err = ch.Qos(
@@ -42,11 +46,13 @@ func NewRabbitSender(c Config) *RabbitSender {
 		0,     // prfectSize
 		false, // global
 	)
+
 	if err != nil {
 		logrus.Fatalf("falied in open a channel: %v", err)
+		return nil, fmt.Errorf("falied in open a channel: %w", err)
 	}
 
-	return &RabbitSender{conn: conn, ch: ch}
+	return &RabbitSender{conn: conn, ch: ch}, nil
 }
 
 func (r *RabbitSender) ProcessImage(data *model.ConversionData) {
@@ -55,7 +61,7 @@ func (r *RabbitSender) ProcessImage(data *model.ConversionData) {
 
 func (r *RabbitSender) SendJSON(data interface{}) {
 	q, err := r.ch.QueueDeclare(
-		"hello",
+		queueName,
 		true,  // durable
 		false, // delte when unused
 		false, // exclusive
@@ -90,13 +96,10 @@ func (r *RabbitSender) SendJSON(data interface{}) {
 
 type Converter interface {
 	Convert(ctx context.Context, data *model.ConversionData) image.Image
-}
-
-type ResizingProcesser interface {
 	ProcessResizedImage(ctx context.Context, im image.Image, data *model.ConversionData)
 }
 
-func Receive(ctx context.Context, conv Converter, proc ResizingProcesser, conf Config) {
+func Receive(ctx context.Context, conv Converter, conf Config) {
 	logger := logging.FromContext(ctx)
 	connStr := fmt.Sprintf("amqps://%s:%s@%s:%s/", conf.User, conf.Password, conf.Host, conf.Port)
 	conn, err := amqp.Dial(connStr)
@@ -120,12 +123,12 @@ func Receive(ctx context.Context, conv Converter, proc ResizingProcesser, conf C
 	}
 
 	q, err := ch.QueueDeclare(
-		"hello", // name
-		true,    // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
-		nil,     // arguments
+		queueName,
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
 	)
 	if err != nil {
 		logger.Fatalf("failed to declare a queue: %v", err)
@@ -146,8 +149,12 @@ func Receive(ctx context.Context, conv Converter, proc ResizingProcesser, conf C
 
 	forever := make(chan bool)
 
+	logger.Info("start conversion server")
+
 	go func() {
 		for d := range msgs {
+			logger.Println("get conversion reqeust")
+
 			var data model.ConversionData
 			err := json.Unmarshal(d.Body, &data)
 
@@ -156,8 +163,8 @@ func Receive(ctx context.Context, conv Converter, proc ResizingProcesser, conf C
 			}
 
 			im := conv.Convert(ctx, &data)
-			proc.ProcessResizedImage(ctx, im, &data)
-			logger.Println("End receiving")
+			conv.ProcessResizedImage(ctx, im, &data)
+			logger.Println("conversion request is handled")
 		}
 	}()
 

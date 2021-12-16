@@ -15,6 +15,7 @@ import (
 	"github.com/Dyleme/image-coverter/internal/logging"
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/repository"
+	"github.com/sirupsen/logrus"
 
 	"image"
 )
@@ -58,7 +59,6 @@ func NewRequestService(repo Requester, stor Storager, proc ImageProcesser) *Requ
 
 func (s *RequestService) GetRequests(ctx context.Context, userID int) ([]model.Request, error) {
 	reqs, err := s.repo.GetRequests(ctx, userID)
-
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +69,8 @@ func (s *RequestService) GetRequests(ctx context.Context, userID int) ([]model.R
 func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Reader,
 	fileName string, convInfo model.ConversionInfo) (int, error) {
 	reqTime := time.Now()
-	pointIndex := strings.LastIndex(fileName, ".")
 
+	pointIndex := strings.LastIndex(fileName, ".")
 	if pointIndex == -1 {
 		return 0, fmt.Errorf("no point in filename")
 	}
@@ -82,7 +82,7 @@ func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Rea
 		return 0, err
 	}
 
-	pic, err := decodeImage(bytes.NewBuffer(fileData), oldType)
+	img, err := decodeImage(bytes.NewBuffer(fileData), oldType)
 	if err != nil {
 		return 0, err
 	}
@@ -92,7 +92,7 @@ func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Rea
 		return 0, fmt.Errorf("upload: %w", err)
 	}
 
-	width, height := getResolution(pic)
+	width, height := getResolution(img)
 	imageInfo := model.Info{
 		Width:  width,
 		Height: height,
@@ -134,8 +134,8 @@ func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Rea
 	return reqID, nil
 }
 
-func decodeImage(r io.Reader, oldType string) (image.Image, error) {
-	switch oldType {
+func decodeImage(r io.Reader, imgType string) (image.Image, error) {
+	switch imgType {
 	case pngType:
 		return png.Decode(r)
 	case jpegType:
@@ -149,10 +149,10 @@ func getResolution(i image.Image) (width, height int) {
 	return i.Bounds().Dx(), i.Bounds().Dy()
 }
 
-func encodeImage(i image.Image, fileType string) ([]byte, error) {
+func encodeImage(i image.Image, imgType string) ([]byte, error) {
 	bf := new(bytes.Buffer)
 
-	switch fileType {
+	switch imgType {
 	case pngType:
 		if err := png.Encode(bf, i); err != nil {
 			return nil, err
@@ -170,7 +170,6 @@ func encodeImage(i image.Image, fileType string) ([]byte, error) {
 
 func (s *RequestService) GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error) {
 	req, err := s.repo.GetRequest(ctx, userID, reqID)
-
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +179,6 @@ func (s *RequestService) GetRequest(ctx context.Context, userID, reqID int) (*mo
 
 func (s *RequestService) DeleteRequest(ctx context.Context, userID, reqID int) error {
 	im1ID, im2ID, err := s.repo.DeleteRequest(ctx, userID, reqID)
-
 	if err != nil {
 		return err
 	}
@@ -220,16 +218,17 @@ func (s *RequestService) uploadFile(ctx context.Context, bts []byte,
 
 func (s *RequestService) Convert(ctx context.Context, data *model.ConversionData) image.Image {
 	logger := logging.FromContext(ctx)
-	err := s.repo.UpdateRequestStatus(ctx, data.ReqID, repository.StatusProcessing)
 
+	err := s.repo.UpdateRequestStatus(ctx, data.ReqID, repository.StatusProcessing)
 	if err != nil {
 		logger.Warn(fmt.Errorf("repo update status in request: %w", err))
 	}
 
 	logger.WithField("name", data.FileName).Info("start image conversion")
 
-	im, err := decodeImage(bytes.NewBuffer(data.Pic), data.OldType)
+	begin := time.Now()
 
+	im, err := decodeImage(bytes.NewBuffer(data.Pic), data.OldType)
 	if err != nil {
 		logger.Error(err)
 	}
@@ -237,6 +236,11 @@ func (s *RequestService) Convert(ctx context.Context, data *model.ConversionData
 	if data.ImageInfo.Ratio != 1 {
 		im = conversion.Resize(im, data.ImageInfo.Ratio)
 	}
+
+	logger.WithFields(logrus.Fields{
+		"name":          data.FileName,
+		"time for conv": time.Since(begin),
+	}).Info("end image conversion")
 
 	return im
 }
@@ -248,12 +252,12 @@ func (s *RequestService) ProcessResizedImage(ctx context.Context, im image.Image
 
 	bts, err := encodeImage(im, data.ImageInfo.Type)
 	if err != nil {
-		logger.Warn(fmt.Errorf("encode image: %w", err))
+		logger.Errorf("encode image: %s", err)
 	}
 
 	newURL, err := s.uploadFile(ctx, bts, convFileName, data.UserID)
 	if err != nil {
-		logger.Warn(fmt.Errorf("upload: %w", err))
+		logger.Errorf("upload: %s", err)
 	}
 
 	newX, newY := getResolution(im)
@@ -266,23 +270,23 @@ func (s *RequestService) ProcessResizedImage(ctx context.Context, im image.Image
 
 	newImageID, err := s.repo.AddImage(ctx, data.UserID, newImageInfo)
 	if err != nil {
-		logger.Warn(fmt.Errorf("repo add image: %w", err))
+		logger.Errorf("repo add image: %s", err)
 	}
 
 	err = s.repo.AddProcessedImageIDToRequest(ctx, data.ReqID, newImageID)
 	if err != nil {
-		logger.Warn(fmt.Errorf("repo update image in request: %w", err))
+		logger.Errorf("repo update image in request: %s", err)
 	}
 
 	completionTime := time.Now()
 
 	err = s.repo.AddProcessedTimeToRequest(ctx, data.ReqID, completionTime)
 	if err != nil {
-		logger.Warn(fmt.Errorf("repo update time in request: %w", err))
+		logger.Errorf("repo update time in request: %s", err)
 	}
 
 	err = s.repo.UpdateRequestStatus(ctx, data.ReqID, repository.StatusDone)
 	if err != nil {
-		logger.Warn(fmt.Errorf("repo update status in request: %w", err))
+		logger.Errorf("repo update status in request: %s", err)
 	}
 }

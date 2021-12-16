@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/minio/minio-go"
 )
@@ -74,21 +71,7 @@ func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName stri
 
 	bf := bytes.NewBuffer(data)
 
-	fileName = m.createPath(userID, fileName)
-
-	for {
-		file, _ := m.client.GetObject("images", fileName, minio.GetObjectOptions{})
-		if _, err = file.Stat(); err == nil {
-			fileName, err = m.increaseIndex(fileName)
-			if err != nil {
-				return "", fmt.Errorf("minio naming: %w", err)
-			}
-
-			continue
-		}
-
-		break
-	}
+	fileName = generateName(fileName)
 
 	_, err = m.client.PutObject("images", fileName, bf, int64(bf.Len()), minio.PutObjectOptions{})
 
@@ -112,23 +95,4 @@ func (m *MinioStorage) DeleteFile(ctx context.Context, path string) error {
 	err = m.client.RemoveObject("images", path)
 
 	return err
-}
-
-func (m *MinioStorage) createPath(userID int, fileName string) string {
-	pointIndex := strings.LastIndex(fileName, ".")
-	return strconv.Itoa(userID) + "_" + fileName[:pointIndex] + "(1)" + fileName[pointIndex:]
-}
-
-func (m *MinioStorage) increaseIndex(path string) (string, error) {
-	openBrack := strings.LastIndex(path, "(")
-	closeBrack := strings.LastIndex(path, ")")
-	numnber, err := strconv.Atoi(path[openBrack+1 : closeBrack])
-
-	if err != nil {
-		return "", err
-	}
-	numnber++
-	path = path[:openBrack+1] + strconv.Itoa(numnber) + path[closeBrack:]
-
-	return path, nil
 }

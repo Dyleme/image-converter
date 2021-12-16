@@ -33,9 +33,8 @@ func (s *Server) Run(ctx context.Context, port string, handler http.Handler) err
 	ctx, cancel := context.WithCancel(ctx)
 
 	go func() {
-		logger.Info("waiting system call")
 		<-c
-		logger.Info("system call")
+		logger.Info("system interrupt call")
 		cancel()
 	}()
 
@@ -57,7 +56,7 @@ func (s *Server) serve(ctx context.Context, port string, handler http.Handler) {
 
 	go func() {
 		if err := s.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Fatalf("listen %s", err)
+			logger.Fatalf("listen: %s", err)
 		}
 	}()
 
@@ -72,6 +71,7 @@ func (s *Server) serve(ctx context.Context, port string, handler http.Handler) {
 
 	if err := s.httpServer.Shutdown(ctxShutDown); err != nil {
 		logger.Fatalf("server shutdown failed %s", err)
+		return
 	}
 
 	logger.Info("server exited properly")

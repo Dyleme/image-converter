@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Dyleme/image-coverter/internal/logging"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/google/uuid"
 )
 
 var bucketName = "dziauho-image-converter"
@@ -63,7 +61,8 @@ func (a *AwsStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
 func (a *AwsStorage) UploadFile(ctx context.Context, userID int, fileName string, data []byte) (string, error) {
 	logger := logging.FromContext(ctx)
 	logger.Infof("getting file %v", fileName)
-	fileName = generateHash(fileName)
+
+	fileName = generateName(fileName)
 	upParams := &s3manager.UploadInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(fileName),
@@ -77,17 +76,6 @@ func (a *AwsStorage) UploadFile(ctx context.Context, userID int, fileName string
 	}
 
 	return fileName, nil
-}
-
-func generateHash(filename string) string {
-	dotPos := strings.LastIndex(filename, ".")
-	name := uuid.NewString()
-
-	if dotPos != -1 {
-		name += filename[dotPos:]
-	}
-
-	return name
 }
 
 func (a *AwsStorage) DeleteFile(ctx context.Context, path string) error {
