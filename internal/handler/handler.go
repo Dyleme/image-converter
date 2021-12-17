@@ -12,10 +12,6 @@ import (
 
 // Handler is a struct which has service interfaces.
 type Handler struct {
-	authService     Autharizater
-	requestService  Requester
-	downloadService Downloader
-
 	authHandler AuthenticationHandler
 	reqHandler  RequestHandler
 	downHandler DownloadHandler
@@ -26,9 +22,9 @@ type Handler struct {
 
 // This constructor initialize Handler's fields with provided arguments.
 func New(authHand AuthenticationHandler, reqHandler RequestHandler, downHandler DownloadHandler,
-	authServ Autharizater, reqServ Requester, downServ Downloader, logger *logrus.Logger) *Handler {
+	logger *logrus.Logger) *Handler {
 	return &Handler{authHandler: authHand, reqHandler: reqHandler, downHandler: downHandler,
-		authService: authServ, requestService: reqServ, downloadService: downServ, logger: logger}
+		logger: logger}
 }
 
 // Autharizater is an interface which has methods to create and validate user.

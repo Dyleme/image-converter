@@ -59,8 +59,7 @@ func main() {
 	reqHandler := handler.NewReqHandler(reqService, logger)
 	downHandler := handler.NewDownHandler(downService, logger)
 
-	handlers := handler.New(authHandler, reqHandler, downHandler,
-		authService, reqService, downService, logger)
+	handlers := handler.New(authHandler, reqHandler, downHandler, logger)
 
 	port := os.Getenv("PORT")
 	srv := new(server.Server)
