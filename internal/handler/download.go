@@ -15,7 +15,7 @@ type DownHandler struct {
 	downloadService Downloader
 }
 
-// Constructor for DownHandler
+// Constructor for DownHandler.
 func NewDownHandler(down Downloader, logger *logrus.Logger) *DownHandler {
 	return &DownHandler{downloadService: down, logger: logger}
 }
