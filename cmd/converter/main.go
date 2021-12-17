@@ -15,7 +15,7 @@ import (
 
 type emptySender struct{}
 
-func (r *emptySender) ProcessImage(data *rabbitmq.ConversionData) {
+func (r *emptySender) ProcessImage(ctx context.Context, data *rabbitmq.ConversionData) {
 }
 
 func main() {

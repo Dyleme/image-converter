@@ -6,6 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
+// generateName is function which can be used to
+// generate uniqe names for files, fith the same extension.
 func generateName(filename string) string {
 	name := uuid.NewString()
 

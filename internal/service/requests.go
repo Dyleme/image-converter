@@ -51,7 +51,7 @@ type RequestService struct {
 }
 
 type ImageProcesser interface {
-	ProcessImage(data *rabbitmq.ConversionData)
+	ProcessImage(ctx context.Context, data *rabbitmq.ConversionData)
 }
 
 func NewRequestService(repo Requester, stor Storager, proc ImageProcesser) *RequestService {
@@ -130,7 +130,7 @@ func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Rea
 		FileName:  fileName,
 	}
 
-	s.processor.ProcessImage(&convertImageData)
+	s.processor.ProcessImage(ctx, &convertImageData)
 
 	return reqID, nil
 }
