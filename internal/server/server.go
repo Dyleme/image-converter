@@ -19,10 +19,13 @@ const (
 	timeForGracefulShutdown = 5 * time.Second
 )
 
+// Server is a struct which handles the requests.
 type Server struct {
 	httpServer *http.Server
 }
 
+// After Run method Server starts to listen port and response to  the reqeusts.
+// Run function provide the abitility of the gracefule shutdown.
 func (s *Server) Run(ctx context.Context, port string, handler http.Handler) error {
 	c := make(chan os.Signal, 1)
 

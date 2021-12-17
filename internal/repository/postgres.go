@@ -19,6 +19,7 @@ const (
 	StatusDone       = `done`
 )
 
+// Config to connect to the database.
 type DBConfig struct {
 	UserName string
 	Password string
@@ -28,6 +29,7 @@ type DBConfig struct {
 	SSLMode  string
 }
 
+// Constuctor to the postgres database.
 func NewPostgresDB(conf *DBConfig) (*sql.DB, error) {
 	var db *sql.DB
 

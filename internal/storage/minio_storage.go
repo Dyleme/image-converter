@@ -10,10 +10,12 @@ import (
 
 var ErrBucketNotExist = errors.New("bucket not exist")
 
+// MinioStorage is a struct that provides methods to store files in minio storage.
 type MinioStorage struct {
 	client minio.Client
 }
 
+// MinioConnfig is a config to make connection with minio storage.
 type MinioConfig struct {
 	Endpoint        string
 	AccessKeyID     string
@@ -21,6 +23,8 @@ type MinioConfig struct {
 	UseSSL          bool
 }
 
+// NewMinoStorage is a constructor to the MinioStoage.
+// Returns error if the connection is denied.
 func NewMinioStorage(conf MinioConfig) (*MinioStorage, error) {
 	cl, err := minio.New(conf.Endpoint, conf.AccessKeyID, conf.SecretAccessKey, conf.UseSSL)
 	if err != nil {
@@ -30,6 +34,7 @@ func NewMinioStorage(conf MinioConfig) (*MinioStorage, error) {
 	return &MinioStorage{client: *cl}, nil
 }
 
+// GetFile method get file from minio storage and return it's bytes.
 func (m *MinioStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
 	exist, err := m.client.BucketExists("images")
 
@@ -56,6 +61,7 @@ func (m *MinioStorage) GetFile(ctx context.Context, path string) ([]byte, error)
 	return bf.Bytes(), err
 }
 
+// UploadFile method upload provided file to the minio storage and returns path to the file.
 func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName string, data []byte) (string, error) {
 	exist, err := m.client.BucketExists("images")
 	if err != nil {
@@ -82,6 +88,7 @@ func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName stri
 	return fileName, nil
 }
 
+// DeleteFile method delete file from the minio storage and return an error if any occurs.
 func (m *MinioStorage) DeleteFile(ctx context.Context, path string) error {
 	exist, err := m.client.BucketExists("images")
 	if err != nil {

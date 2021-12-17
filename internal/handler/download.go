@@ -41,5 +41,5 @@ func (h *Handler) DownloadImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newDownloadFileResponce(w, b)
+	newDownloadFileResponse(w, b)
 }

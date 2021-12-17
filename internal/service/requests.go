@@ -32,6 +32,7 @@ const (
 
 var ErrUnsupportedType = errors.New("unsopported type")
 
+// Requester is an interface which provides methods to implement with the reposistory.
 type Requester interface {
 	GetRequests(ctx context.Context, id int) ([]model.Request, error)
 	GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error)
@@ -44,20 +45,25 @@ type Requester interface {
 	DeleteImage(ctx context.Context, userID, imageID int) (string, error)
 }
 
+// RequestService is a struct provides the abitility to get, add, delete and update requests.
 type RequestService struct {
 	repo      Requester
 	storage   Storager
 	processor ImageProcesser
 }
 
+// ImageProcesser is an interface which is provides method to save image to the repo.
 type ImageProcesser interface {
 	ProcessImage(ctx context.Context, data *rabbitmq.ConversionData)
 }
 
+// NewRequestService is a constructor to the RequestService.
 func NewRequestService(repo Requester, stor Storager, proc ImageProcesser) *RequestService {
 	return &RequestService{repo: repo, storage: stor, processor: proc}
 }
 
+// GetRequests returns requsts, or error if any occurs.
+// Function get requests with repo.GetRequests and returns them.
 func (s *RequestService) GetRequests(ctx context.Context, userID int) ([]model.Request, error) {
 	reqs, err := s.repo.GetRequests(ctx, userID)
 	if err != nil {
@@ -67,6 +73,10 @@ func (s *RequestService) GetRequests(ctx context.Context, userID int) ([]model.R
 	return reqs, nil
 }
 
+// AddRequest return the id of the added request or error if any occurs.
+// Also this function calls processor.ProcessImgae to convert the image.
+// Function decode file as image and upload this image using stor.UploadFile,
+// add request to the repo with repo.AddRequest.
 func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Reader,
 	fileName string, convInfo model.ConversionInfo) (int, error) {
 	reqTime := time.Now()
@@ -135,6 +145,8 @@ func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Rea
 	return reqID, nil
 }
 
+// decodeImage decodes image from the r.
+// Decoding supports only jpeg and png types.
 func decodeImage(r io.Reader, imgType string) (image.Image, error) {
 	switch imgType {
 	case pngType:
@@ -146,10 +158,12 @@ func decodeImage(r io.Reader, imgType string) (image.Image, error) {
 	}
 }
 
+// getResolution function returns the resolution of the image.
 func getResolution(i image.Image) (width, height int) {
 	return i.Bounds().Dx(), i.Bounds().Dy()
 }
 
+// encodeImage encode image with the provided image type, returns bytes of the encoded image.
 func encodeImage(i image.Image, imgType string) ([]byte, error) {
 	bf := new(bytes.Buffer)
 
@@ -169,6 +183,8 @@ func encodeImage(i image.Image, imgType string) ([]byte, error) {
 	return bf.Bytes(), nil
 }
 
+// GetRequest returns the request by its id and user id.
+// Method calls repo.GetRequest and return it's result.
 func (s *RequestService) GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error) {
 	req, err := s.repo.GetRequest(ctx, userID, reqID)
 	if err != nil {
@@ -178,6 +194,9 @@ func (s *RequestService) GetRequest(ctx context.Context, userID, reqID int) (*mo
 	return req, nil
 }
 
+// DeleteRequest method deletes request.
+// At first it deletes request using repo.DeleteRequest, than delete image from database using.DeleteImage
+// and finally it deletes images from the storage using storage.DeletFile.
 func (s *RequestService) DeleteRequest(ctx context.Context, userID, reqID int) error {
 	im1ID, im2ID, err := s.repo.DeleteRequest(ctx, userID, reqID)
 	if err != nil {
@@ -217,6 +236,7 @@ func (s *RequestService) uploadFile(ctx context.Context, bts []byte,
 	return newURL, nil
 }
 
+// Convert is function that converts image, that is getted from ConversionData.
 func (s *RequestService) Convert(ctx context.Context, data *rabbitmq.ConversionData) image.Image {
 	logger := logging.FromContext(ctx)
 
@@ -246,6 +266,7 @@ func (s *RequestService) Convert(ctx context.Context, data *rabbitmq.ConversionD
 	return im
 }
 
+// ProcessResizedImage is used to upload image to the storage and update repository.
 func (s *RequestService) ProcessResizedImage(ctx context.Context, im image.Image, data *rabbitmq.ConversionData) {
 	logger := logging.FromContext(ctx)
 	pointIndex := strings.LastIndex(data.FileName, ".")

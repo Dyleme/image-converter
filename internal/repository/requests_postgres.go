@@ -9,14 +9,17 @@ import (
 	"github.com/Dyleme/image-coverter/internal/model"
 )
 
+// ReqPostgres is a struct that provide methods get, add, delete and update requests.
 type ReqPostgres struct {
 	db *sql.DB
 }
 
+// NewReqPostgres is constructor for the ReqPostgres.
 func NewReqPostgres(db *sql.DB) *ReqPostgres {
 	return &ReqPostgres{db: db}
 }
 
+// GetRequests method gets all user's requests from the postgres database.
 func (r *ReqPostgres) GetRequests(ctx context.Context, userID int) ([]model.Request, error) {
 	query := fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
 	 processed_id, ratio, original_type, processed_type FROM %s WHERE user_id = $1`, RequestTable)
@@ -58,6 +61,8 @@ func (r *ReqPostgres) GetRequests(ctx context.Context, userID int) ([]model.Requ
 	return reqs, nil
 }
 
+// GetRequests method gets one request from the database by its id.
+// If this request belongs to the another user, this function returns error.
 func (r *ReqPostgres) GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error) {
 	query := fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
 	 processed_id, ratio, original_type, processed_type FROM %s WHERE id = $1 and user_id = $2`, RequestTable)
@@ -87,6 +92,7 @@ func (r *ReqPostgres) GetRequest(ctx context.Context, userID, reqID int) (*model
 	return &req, nil
 }
 
+// AddRequest method add a request to the database and returns request id.
 func (r *ReqPostgres) AddRequest(ctx context.Context, req *model.Request, userID int) (int, error) {
 	query := fmt.Sprintf(`INSERT INTO %s (op_status, request_time, original_id, 
 		user_id, ratio, original_type, processed_type)
@@ -102,6 +108,7 @@ func (r *ReqPostgres) AddRequest(ctx context.Context, req *model.Request, userID
 	return reqID, nil
 }
 
+// UpdateRequestStatus method update status of an existing request in database.
 func (r *ReqPostgres) UpdateRequestStatus(ctx context.Context, reqID int, status string) error {
 	query := fmt.Sprintf(`UPDATE %s SET op_status = $1 WHERE id = $2 RETURNING id`, RequestTable)
 	row := r.db.QueryRow(query, status, reqID)
@@ -114,6 +121,7 @@ func (r *ReqPostgres) UpdateRequestStatus(ctx context.Context, reqID int, status
 	return nil
 }
 
+// AddProcessedImageIDToRequest method update processed image id column for the reqId.
 func (r *ReqPostgres) AddProcessedImageIDToRequest(ctx context.Context, reqID, imageID int) error {
 	query := fmt.Sprintf(`UPDATE %s SET processed_id = $1 WHERE id = $2 RETURNING id;`, RequestTable)
 	row := r.db.QueryRow(query, imageID, reqID)
@@ -126,6 +134,7 @@ func (r *ReqPostgres) AddProcessedImageIDToRequest(ctx context.Context, reqID, i
 	return nil
 }
 
+// AddProcessedImageIDToRequest method update processed time column for the reqId.
 func (r *ReqPostgres) AddProcessedTimeToRequest(ctx context.Context, reqID int, t time.Time) error {
 	query := fmt.Sprintf(`UPDATE %s SET completion_time = $1 WHERE id = $2 RETURNING id;`, RequestTable)
 	row := r.db.QueryRow(query, t, reqID)
@@ -138,6 +147,8 @@ func (r *ReqPostgres) AddProcessedTimeToRequest(ctx context.Context, reqID int, 
 	return nil
 }
 
+// AddImage method add image to the postgres database.
+// Returns id of this image.
 func (r *ReqPostgres) AddImage(ctx context.Context, userID int, imageInfo model.Info) (int, error) {
 	query := fmt.Sprintf(`INSERT INTO %s (resoolution_x, resoolution_y, im_type, image_url, user_id)
 		VALUES ($1, $2, $3, $4, $5) RETURNING id;`, ImageTable)
@@ -153,6 +164,8 @@ func (r *ReqPostgres) AddImage(ctx context.Context, userID int, imageInfo model.
 	return imageID, nil
 }
 
+// DeleteRequest method deletes request with reqeust id from database.
+// Returns id of the origianal and converted images.
 func (r *ReqPostgres) DeleteRequest(ctx context.Context, userID, reqID int) (im1id, im2id int, err error) {
 	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING original_id, processed_id`, RequestTable)
 	row := r.db.QueryRow(query, userID, reqID)
@@ -164,6 +177,7 @@ func (r *ReqPostgres) DeleteRequest(ctx context.Context, userID, reqID int) (im1
 	return im1id, im2id, nil
 }
 
+// DeleteImage method delete image from the database. Returns url path to this image.
 func (r *ReqPostgres) DeleteImage(ctx context.Context, userID, imageID int) (string, error) {
 	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND id = $2 RETURNING image_url`, ImageTable)
 	row := r.db.QueryRow(query, userID, imageID)

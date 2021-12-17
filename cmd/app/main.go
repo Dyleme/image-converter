@@ -53,7 +53,7 @@ func main() {
 
 	authService := service.NewAuthSevice(authRep, &service.HashGen{}, &service.JwtGen{})
 	reqService := service.NewRequestService(reqRep, stor, rabbitSender)
-	downService := service.NewDownloadSerivce(downRep, stor)
+	downService := service.NewDownloadService(downRep, stor)
 
 	handlers := handler.New(authService, reqService, downService, logger)
 
