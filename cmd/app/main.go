@@ -55,7 +55,12 @@ func main() {
 	reqService := service.NewRequestService(reqRep, stor, rabbitSender)
 	downService := service.NewDownloadService(downRep, stor)
 
-	handlers := handler.New(authService, reqService, downService, logger)
+	authHandler := handler.NewAuthHandler(authService, logger)
+	reqHandler := handler.NewReqHandler(reqService, logger)
+	downHandler := handler.NewDownHandler(downService, logger)
+
+	handlers := handler.New(authHandler, reqHandler, downHandler,
+		authService, reqService, downService, logger)
 
 	port := os.Getenv("PORT")
 	srv := new(server.Server)
