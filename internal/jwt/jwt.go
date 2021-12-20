@@ -21,7 +21,7 @@ const (
 
 var ErrTokenClaimsInvalidType = errors.New("token claims are not of the type MapClaims")
 
-var ErrContextHaveNotUser = errors.New("can't get user from context")
+var ErrContextWithoutUser = errors.New("can't get user from context")
 
 type UnexpectedSingingMethodError struct {
 	method interface{}
@@ -36,6 +36,7 @@ type tokenClaims struct {
 	UserID int `json:"userID"`
 }
 
+// CreateToken function generate token with provided TTL and user id.
 func CreateToken(ctx context.Context, tokenTTL time.Duration, id int) (string, error) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		jwt.StandardClaims{
@@ -48,6 +49,7 @@ func CreateToken(ctx context.Context, tokenTTL time.Duration, id int) (string, e
 	return jwtToken.SignedString([]byte(signedKey))
 }
 
+// ParseToken function rerurns user id from JWT token, if this token is liquid.
 func ParseToken(ctx context.Context, tokenString string) (int, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -75,11 +77,13 @@ func ParseToken(ctx context.Context, tokenString string) (int, error) {
 	return 0, ErrTokenClaimsInvalidType
 }
 
+// Function GetUserFromContext return a user from a context,
+// or error ErrContextWithoutUser if it isn't user in context.
 func GetUserFromContext(ctx context.Context) (int, error) {
 	userID, ok := ctx.Value(KeyUserID).(int)
 
 	if !ok {
-		return 0, ErrContextHaveNotUser
+		return 0, ErrContextWithoutUser
 	}
 
 	return userID, nil

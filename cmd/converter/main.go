@@ -7,7 +7,6 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/Dyleme/image-coverter/internal/logging"
-	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/rabbitmq"
 	"github.com/Dyleme/image-coverter/internal/repository"
 	"github.com/Dyleme/image-coverter/internal/service"
@@ -16,7 +15,7 @@ import (
 
 type emptySender struct{}
 
-func (r *emptySender) ProcessImage(data *model.ConversionData) {
+func (r *emptySender) ProcessImage(ctx context.Context, data *rabbitmq.ConversionData) {
 }
 
 func main() {
@@ -36,8 +35,8 @@ func main() {
 	}
 
 	reqRep := repository.NewReqPostgres(db)
-	stor, err := storage.NewAwsStorage()
 
+	stor, err := storage.NewAwsStorage()
 	if err != nil {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
@@ -51,5 +50,5 @@ func main() {
 
 	reqService := service.NewRequestService(reqRep, stor, &emptySender{})
 
-	rabbitmq.Receive(ctx, reqService, reqService, rabbitConfig)
+	rabbitmq.Receive(ctx, reqService, rabbitConfig)
 }

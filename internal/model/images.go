@@ -1,25 +1,18 @@
 package model
 
-import "context"
-
+// Information about image conversion.
 type ConversionInfo struct {
+	// Ration with which you will convert image.
 	Ratio float32 `json:"ratio"`
-	Type  string  `json:"newType"`
+
+	// Type to which you will convert image.
+	Type string `json:"newType"`
 }
 
+// Information about image.
 type Info struct {
 	Width  int
 	Height int
 	Type   string
 	URL    string
-}
-
-type ConversionData struct {
-	Ctx       context.Context
-	ImageInfo ConversionInfo `json:"imageInfo"`
-	UserID    int            `json:"userID"`
-	ReqID     int            `json:"reqID"`
-	OldType   string         `json:"oldType"`
-	Pic       []byte         `json:"pic"`
-	FileName  string         `json:"fileName"`
 }

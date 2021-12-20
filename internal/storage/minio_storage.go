@@ -4,19 +4,18 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/minio/minio-go"
 )
 
 var ErrBucketNotExist = errors.New("bucket not exist")
 
+// MinioStorage is a struct that provides methods to store files in minio storage.
 type MinioStorage struct {
 	client minio.Client
 }
 
+// MinioConnfig is a config to make connection with minio storage.
 type MinioConfig struct {
 	Endpoint        string
 	AccessKeyID     string
@@ -24,6 +23,8 @@ type MinioConfig struct {
 	UseSSL          bool
 }
 
+// NewMinoStorage is a constructor to the MinioStoage.
+// Returns error if the connection is denied.
 func NewMinioStorage(conf MinioConfig) (*MinioStorage, error) {
 	cl, err := minio.New(conf.Endpoint, conf.AccessKeyID, conf.SecretAccessKey, conf.UseSSL)
 	if err != nil {
@@ -33,6 +34,7 @@ func NewMinioStorage(conf MinioConfig) (*MinioStorage, error) {
 	return &MinioStorage{client: *cl}, nil
 }
 
+// GetFile method get file from minio storage and return it's bytes.
 func (m *MinioStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
 	exist, err := m.client.BucketExists("images")
 
@@ -59,6 +61,7 @@ func (m *MinioStorage) GetFile(ctx context.Context, path string) ([]byte, error)
 	return bf.Bytes(), err
 }
 
+// UploadFile method upload provided file to the minio storage and returns path to the file.
 func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName string, data []byte) (string, error) {
 	exist, err := m.client.BucketExists("images")
 	if err != nil {
@@ -74,21 +77,7 @@ func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName stri
 
 	bf := bytes.NewBuffer(data)
 
-	fileName = m.createPath(userID, fileName)
-
-	for {
-		file, _ := m.client.GetObject("images", fileName, minio.GetObjectOptions{})
-		if _, err = file.Stat(); err == nil {
-			fileName, err = m.increaseIndex(fileName)
-			if err != nil {
-				return "", fmt.Errorf("minio naming: %w", err)
-			}
-
-			continue
-		}
-
-		break
-	}
+	fileName = generateName(fileName)
 
 	_, err = m.client.PutObject("images", fileName, bf, int64(bf.Len()), minio.PutObjectOptions{})
 
@@ -99,6 +88,7 @@ func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName stri
 	return fileName, nil
 }
 
+// DeleteFile method delete file from the minio storage and return an error if any occurs.
 func (m *MinioStorage) DeleteFile(ctx context.Context, path string) error {
 	exist, err := m.client.BucketExists("images")
 	if err != nil {
@@ -112,23 +102,4 @@ func (m *MinioStorage) DeleteFile(ctx context.Context, path string) error {
 	err = m.client.RemoveObject("images", path)
 
 	return err
-}
-
-func (m *MinioStorage) createPath(userID int, fileName string) string {
-	pointIndex := strings.LastIndex(fileName, ".")
-	return strconv.Itoa(userID) + "_" + fileName[:pointIndex] + "(1)" + fileName[pointIndex:]
-}
-
-func (m *MinioStorage) increaseIndex(path string) (string, error) {
-	openBrack := strings.LastIndex(path, "(")
-	closeBrack := strings.LastIndex(path, ")")
-	numnber, err := strconv.Atoi(path[openBrack+1 : closeBrack])
-
-	if err != nil {
-		return "", err
-	}
-	numnber++
-	path = path[:openBrack+1] + strconv.Itoa(numnber) + path[closeBrack:]
-
-	return path, nil
 }

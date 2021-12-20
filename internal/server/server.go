@@ -19,10 +19,13 @@ const (
 	timeForGracefulShutdown = 5 * time.Second
 )
 
+// Server is a struct which handles the requests.
 type Server struct {
 	httpServer *http.Server
 }
 
+// After Run method Server starts to listen port and response to  the reqeusts.
+// Run function provide the abitility of the gracefule shutdown.
 func (s *Server) Run(ctx context.Context, port string, handler http.Handler) error {
 	c := make(chan os.Signal, 1)
 
@@ -33,9 +36,8 @@ func (s *Server) Run(ctx context.Context, port string, handler http.Handler) err
 	ctx, cancel := context.WithCancel(ctx)
 
 	go func() {
-		logger.Info("waiting system call")
 		<-c
-		logger.Info("system call")
+		logger.Info("system interrupt call")
 		cancel()
 	}()
 
@@ -57,7 +59,7 @@ func (s *Server) serve(ctx context.Context, port string, handler http.Handler) {
 
 	go func() {
 		if err := s.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Fatalf("listen %s", err)
+			logger.Fatalf("listen: %s", err)
 		}
 	}()
 
@@ -72,6 +74,7 @@ func (s *Server) serve(ctx context.Context, port string, handler http.Handler) {
 
 	if err := s.httpServer.Shutdown(ctxShutDown); err != nil {
 		logger.Fatalf("server shutdown failed %s", err)
+		return
 	}
 
 	logger.Info("server exited properly")

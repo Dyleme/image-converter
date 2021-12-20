@@ -21,10 +21,6 @@ var (
 	errStorage    = errors.New("error in storage")
 )
 
-type mockSender struct{}
-
-func (m *mockSender) ProcessImage(data *model.ConversionData) {}
-
 func TestGetRequests(t *testing.T) {
 	testCases := []struct {
 		testName string
@@ -177,7 +173,7 @@ func TestGetRequest(t *testing.T) {
 			mockRequest := mocks.NewMockRequester(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
-			srvc := service.NewRequestService(mockRequest, mockStorage, &mockSender{})
+			srvc := service.NewRequestService(mockRequest, mockStorage, &mocks.MockImageProcesser{})
 			ctx := context.Background()
 
 			mockRequest.EXPECT().GetRequest(ctx, tc.userID, tc.reqID).Return(tc.repReq, tc.repErr).Times(1)
@@ -299,7 +295,7 @@ func TestAddReqeust(t *testing.T) {
 				mockRequest.EXPECT().AddRequest(ctx, gomock.Any(), tc.userID).Return(tc.repoReqID, tc.reqRepoErr)
 			}
 			if tc.runProcessImage {
-				mockProcess.EXPECT().ProcessImage(gomock.Any())
+				mockProcess.EXPECT().ProcessImage(ctx, gomock.Any())
 			}
 
 			gotReqID, gotErr := srvc.AddRequest(ctx, tc.userID, tc.file,
@@ -443,7 +439,7 @@ func TestDeleteReqeust(t *testing.T) {
 			mockRequest := mocks.NewMockRequester(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
-			srvc := service.NewRequestService(mockRequest, mockStorage, &mockSender{})
+			srvc := service.NewRequestService(mockRequest, mockStorage, &mocks.MockImageProcesser{})
 			ctx := context.Background()
 
 			mockRequest.EXPECT().DeleteRequest(ctx, tc.userID, tc.reqID).Return(tc.repo1ID, tc.repo2ID, tc.deleteReqErr)

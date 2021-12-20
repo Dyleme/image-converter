@@ -3,18 +3,19 @@ package storage
 import (
 	"bytes"
 	"os"
-	"strconv"
-	"strings"
 )
 
+// LocalSTorage provides methods to store files localy.
 type LocalStorage struct {
 	path string
 }
 
+// NewLoacalStorage is a constructor for LoacalStorage.
 func NewLocalStorage(path string) *LocalStorage {
 	return &LocalStorage{path: path}
 }
 
+// GetFile takes file from the fullPath and returns it's bytes.
 func (s *LocalStorage) GetFile(fullPath string) ([]byte, error) {
 	file, err := os.Open(fullPath)
 	if err != nil {
@@ -31,21 +32,10 @@ func (s *LocalStorage) GetFile(fullPath string) ([]byte, error) {
 	return bf.Bytes(), err
 }
 
+// UploadFile upload file to the local storage. With the generateated unique name.
+// Retuurninig path to this file.
 func (s *LocalStorage) UploadFile(userID int, fileName string, data []byte) (string, error) {
-	fullPath := s.createPath(userID, fileName)
-
-	for {
-		if _, err := os.Stat(fullPath); err != nil {
-			break
-		}
-
-		var err error
-
-		fullPath, err = s.increaseIndex(fullPath)
-		if err != nil {
-			return "", err
-		}
-	}
+	fullPath := s.path + generateName(fileName)
 
 	file, err := os.Create(fullPath)
 	if err != nil {
@@ -57,25 +47,7 @@ func (s *LocalStorage) UploadFile(userID int, fileName string, data []byte) (str
 	return fullPath, err
 }
 
-func (s *LocalStorage) createPath(userID int, fileName string) string {
-	pointIndex := strings.LastIndex(fileName, ".")
-	return s.path + strconv.Itoa(userID) + "_" + fileName[:pointIndex] + "_1" + fileName[pointIndex:]
-}
-
-func (s *LocalStorage) increaseIndex(path string) (string, error) {
-	firstUnder := strings.LastIndex(path, "_")
-	secondUnder := strings.LastIndex(path, ".")
-	numnber, err := strconv.Atoi(path[firstUnder+1 : secondUnder])
-
-	if err != nil {
-		return "", err
-	}
-	numnber++
-	path = path[:firstUnder+1] + strconv.Itoa(numnber) + path[secondUnder:]
-
-	return path, nil
-}
-
+// DeleteFile delte file whick path is fullPath.
 func (s *LocalStorage) DeleteFile(fullPath string) error {
 	return os.Remove(fullPath)
 }

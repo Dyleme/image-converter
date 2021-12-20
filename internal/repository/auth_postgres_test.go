@@ -116,7 +116,7 @@ func TestGetPasswordAndID(t *testing.T) {
 			}
 			mock.ExpectQuery(query).WithArgs(tc.userNickname).WillReturnRows(rows)
 
-			gotPassword, gotID, gotErr := repo.GetPasswordAndID(context.Background(), tc.userNickname)
+			gotPassword, gotID, gotErr := repo.GetPasswordHashAndID(context.Background(), tc.userNickname)
 
 			if !errors.Is(gotErr, tc.wantErr) {
 				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)

@@ -50,18 +50,18 @@ func (mr *MockAutharizaterMockRecorder) CreateUser(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockAutharizater)(nil).CreateUser), arg0, arg1)
 }
 
-// GetPasswordAndID mocks base method.
-func (m *MockAutharizater) GetPasswordAndID(arg0 context.Context, arg1 string) ([]byte, int, error) {
+// GetPasswordHashAndID mocks base method.
+func (m *MockAutharizater) GetPasswordHashAndID(arg0 context.Context, arg1 string) ([]byte, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPasswordAndID", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetPasswordHashAndID", arg0, arg1)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// GetPasswordAndID indicates an expected call of GetPasswordAndID.
-func (mr *MockAutharizaterMockRecorder) GetPasswordAndID(arg0, arg1 interface{}) *gomock.Call {
+// GetPasswordHashAndID indicates an expected call of GetPasswordHashAndID.
+func (mr *MockAutharizaterMockRecorder) GetPasswordHashAndID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPasswordAndID", reflect.TypeOf((*MockAutharizater)(nil).GetPasswordAndID), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPasswordHashAndID", reflect.TypeOf((*MockAutharizater)(nil).GetPasswordHashAndID), arg0, arg1)
 }

@@ -129,7 +129,7 @@ func TestValidateUser(t *testing.T) {
 			repoPsswrd: nil,
 			repoError:  errRepository,
 			wantJwt:    "",
-			wantError:  service.ErrWrongPassword,
+			wantError:  errRepository,
 		},
 		{
 			testName: "Wrong password",
@@ -138,8 +138,8 @@ func TestValidateUser(t *testing.T) {
 				Password: "123",
 			},
 			repoID:     19,
-			repoPsswrd: nil,
-			repoError:  errRepository,
+			repoPsswrd: []byte("321"),
+			repoError:  nil,
 			wantJwt:    "",
 			wantError:  service.ErrWrongPassword,
 		},
@@ -170,7 +170,7 @@ func TestValidateUser(t *testing.T) {
 			srvc := service.NewAuthSevice(mockAuth, generator, jwtGnrt)
 
 			ctx := context.Background()
-			mockAuth.EXPECT().GetPasswordAndID(ctx, tc.user.Nickname).Return(tc.repoPsswrd, tc.repoID, tc.repoError).Times(1)
+			mockAuth.EXPECT().GetPasswordHashAndID(ctx, tc.user.Nickname).Return(tc.repoPsswrd, tc.repoID, tc.repoError).Times(1)
 
 			gotJwt, gotErr := srvc.ValidateUser(ctx, tc.user)
 

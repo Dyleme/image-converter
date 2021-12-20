@@ -18,9 +18,14 @@ const (
 	BearerToken = "Bearer"
 )
 
+// checkJWT is not allow to acces to endpoints to unauthorized users.
+// It get jwt tokent from a header, get the user by this token and put the user to the context.
+// If eroor doesn't occur than the next hadnler handle the reqeust,
+// else method response with the error answer.
 func (h *Handler) checkJWT(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
 		authHeader, exist := r.Header[AuthorizationHeader]
 		if !exist {
 			newErrorResponse(w, http.StatusUnauthorized, "empty auth header")
@@ -56,6 +61,8 @@ func (h *Handler) checkJWT(handler http.Handler) http.Handler {
 	})
 }
 
+// logging is used to log all incoming requests.
+// It logs request's url, method and time for answer to this reqeust.
 func (h *Handler) logging(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		begin := time.Now()

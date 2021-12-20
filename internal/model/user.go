@@ -1,5 +1,6 @@
 package model
 
+// User struct.
 type User struct {
 	ID       int    `json:"-"`
 	Nickname string `json:"nickname"`
