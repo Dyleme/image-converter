@@ -16,8 +16,6 @@ import (
 var errInvalidUser = errors.New("invalid user")
 
 func TestAuthHandler_Login(t *testing.T) {
-	type fields struct {
-	}
 	testCases := []struct {
 		testName   string
 		method     string
@@ -98,14 +96,12 @@ func TestAuthHandler_Login(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-
 			authMock := mocks.NewMockAutharizater(mockCtr)
+			authHandler := handler.NewAuthHandler(authMock, &logrus.Logger{})
 
 			tc.configure(authMock)
 
-			handler := handler.NewAuthHandler(authMock, &logrus.Logger{})
-
-			handler.Login(rr, req)
+			authHandler.Login(rr, req)
 
 			if status := rr.Code; status != tc.wantStatus {
 				t.Errorf("want status %v, got status %v", tc.wantStatus, status)
@@ -114,7 +110,6 @@ func TestAuthHandler_Login(t *testing.T) {
 			if body := rr.Body.String(); body != tc.wantBody {
 				t.Errorf("want body %s, got body %s", tc.wantBody, body)
 			}
-
 		})
 	}
 }
@@ -122,8 +117,6 @@ func TestAuthHandler_Login(t *testing.T) {
 var errCreatingUser = errors.New("creating user error")
 
 func TestAuthHandler_Register(t *testing.T) {
-	type fields struct {
-	}
 	testCases := []struct {
 		testName   string
 		method     string
@@ -133,6 +126,34 @@ func TestAuthHandler_Register(t *testing.T) {
 		wantStatus int
 		wantBody   string
 	}{
+		{
+			testName: "all is good",
+			method:   http.MethodGet,
+			path:     "/auth/register",
+			configure: func(ma *mocks.MockAutharizater) {
+				ma.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(1, nil).Times(1)
+			},
+			reqBody: `{
+    			"Nickname": "Dyleme",
+  		  		"Password": "1231"
+			}`,
+			wantStatus: http.StatusOK,
+			wantBody:   `{"id":1}`,
+		},
+		{
+			testName: "error in creating user",
+			method:   http.MethodGet,
+			path:     "/auth/register",
+			configure: func(ma *mocks.MockAutharizater) {
+				ma.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(0, errCreatingUser).Times(1)
+			},
+			reqBody: `{
+    			"Nickname": "Dyleme",
+  		  		"Password": "1231"
+			}`,
+			wantStatus: http.StatusInternalServerError,
+			wantBody:   `{"message":"creating user error"}`,
+		},
 		{
 			testName:   "empty request body",
 			method:     http.MethodGet,
@@ -147,11 +168,11 @@ func TestAuthHandler_Register(t *testing.T) {
 			path:      "/auth/register",
 			configure: func(ma *mocks.MockAutharizater) {},
 			reqBody: `{
-    			"Nickname : "Dyleme",
+    			"Nickname : "pyleme",
   		  		"Password": "1231"
 			}`,
 			wantStatus: http.StatusBadRequest,
-			wantBody:   `{"message":"invalid character 'D' after object key"}`,
+			wantBody:   `{"message":"invalid character 'p' after object key"}`,
 		},
 		{
 			testName:  "body not full",
@@ -163,33 +184,6 @@ func TestAuthHandler_Register(t *testing.T) {
 			}`,
 			wantStatus: http.StatusBadRequest,
 			wantBody:   `{"message":"all fields should be filled {Dyleme,}"}`,
-		},
-		{
-			testName: "all is good",
-			method:   http.MethodGet,
-			path:     "/auth/register",
-			configure: func(ma *mocks.MockAutharizater) {
-				ma.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(1, nil).Times(1)
-			},
-			reqBody: `{
-    			"Nickname": "Dyleme",
-  		  		"Password": "1231"
-			}`,
-			wantStatus: http.StatusOK,
-			wantBody:   `{"id":1}`,
-		}, {
-			testName: "error in creating user",
-			method:   http.MethodGet,
-			path:     "/auth/register",
-			configure: func(ma *mocks.MockAutharizater) {
-				ma.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(0, errCreatingUser).Times(1)
-			},
-			reqBody: `{
-    			"Nickname": "Dyleme",
-  		  		"Password": "1231"
-			}`,
-			wantStatus: http.StatusInternalServerError,
-			wantBody:   `{"message":"creating user error"}`,
 		},
 	}
 	for _, tc := range testCases {
@@ -208,9 +202,9 @@ func TestAuthHandler_Register(t *testing.T) {
 
 			tc.configure(authMock)
 
-			handler := handler.NewAuthHandler(authMock, &logrus.Logger{})
+			authHandler := handler.NewAuthHandler(authMock, &logrus.Logger{})
 
-			handler.Register(rr, req)
+			authHandler.Register(rr, req)
 
 			if status := rr.Code; status != tc.wantStatus {
 				t.Errorf("want status %v, got status %v", tc.wantStatus, status)
@@ -219,7 +213,6 @@ func TestAuthHandler_Register(t *testing.T) {
 			if body := rr.Body.String(); body != tc.wantBody {
 				t.Errorf("want body %s, got body %s", tc.wantBody, body)
 			}
-
 		})
 	}
 }
