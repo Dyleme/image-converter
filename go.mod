@@ -23,11 +23,4 @@ require (
 	github.com/streadway/amqp v1.0.0
 )
 
-require (
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
-	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
-	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
-	golang.org/x/text v0.3.6 // indirect
-)
+require github.com/stretchr/testify v1.7.0 // indirect

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/Dyleme/image-coverter/internal/model"
@@ -19,6 +20,15 @@ func NewAuthHandler(auth Autharizater, logger *logrus.Logger) *AuthHandler {
 	return &AuthHandler{authService: auth, logger: logger}
 }
 
+type NotFilledFieldError struct {
+	name     string
+	password string
+}
+
+func (e *NotFilledFieldError) Error() string {
+	return fmt.Sprintf("all fields should be filled {%s,%s}", e.name, e.password)
+}
+
 // Login is method which decode request body to model.User
 // And validate this user using ValidateUser service method.
 // Method response with jwt token or error, if any occurs.
@@ -33,6 +43,14 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.Nickname == "" || input.Password == "" {
+		err := &NotFilledFieldError{input.Nickname, input.Password}
+		newErrorResponse(w, http.StatusBadRequest, err.Error())
+		ah.logger.Warn(err)
+
+		return
+	}
+
 	jwtToken, err := ah.authService.ValidateUser(ctx, input)
 	if err != nil {
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -41,7 +59,13 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newJSONResponse(w, jwtToken)
+	jwt := struct {
+		JwtString string `json:"jwt"`
+	}{
+		JwtString: jwtToken,
+	}
+
+	newJSONResponse(w, jwt)
 }
 
 // Register is function which is used to register users.
@@ -55,6 +79,14 @@ func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		ah.logger.Warn(err)
 		newErrorResponse(w, http.StatusBadRequest, err.Error())
+
+		return
+	}
+
+	if input.Nickname == "" || input.Password == "" {
+		err := &NotFilledFieldError{input.Nickname, input.Password}
+		newErrorResponse(w, http.StatusBadRequest, err.Error())
+		ah.logger.Warn(err)
 
 		return
 	}
