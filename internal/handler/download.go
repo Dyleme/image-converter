@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -8,6 +9,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
+
+// Downloader is an interface which has method to download image.
+type Downloader interface {
+	DownloadImage(ctx context.Context, userID, imageID int) ([]byte, error)
+}
 
 // Struct which provides method to handle downloading.
 type DownHandler struct {

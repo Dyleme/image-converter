@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,6 +9,12 @@ import (
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/sirupsen/logrus"
 )
+
+// Autharizater is an interface which has methods to create and validate user.
+type Autharizater interface {
+	CreateUser(ctx context.Context, user model.User) (int, error)
+	ValidateUser(ctx context.Context, user model.User) (string, error)
+}
 
 // Struct which provides methods to handle Login and Registration.
 type AuthHandler struct {

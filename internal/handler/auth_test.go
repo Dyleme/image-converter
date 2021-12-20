@@ -144,6 +144,7 @@ func TestAuthHandler_Register(t *testing.T) {
 			testName: "error in creating user",
 			method:   http.MethodGet,
 			path:     "/auth/register",
+
 			configure: func(ma *mocks.MockAutharizater) {
 				ma.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(0, errCreatingUser).Times(1)
 			},

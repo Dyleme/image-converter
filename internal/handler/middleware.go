@@ -22,7 +22,7 @@ const (
 // It get jwt tokent from a header, get the user by this token and put the user to the context.
 // If eroor doesn't occur than the next hadnler handle the reqeust,
 // else method response with the error answer.
-func (h *Handler) checkJWT(handler http.Handler) http.Handler {
+func CheckJWT(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 

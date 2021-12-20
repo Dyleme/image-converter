@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -10,6 +12,14 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
+
+// Requester is an interface which has methods to get, delete and add requests.
+type Requester interface {
+	GetRequests(ctx context.Context, userID int) ([]model.Request, error)
+	GetRequest(ctx context.Context, userID int, reqID int) (*model.Request, error)
+	DeleteRequest(ctx context.Context, userID int, reqID int) error
+	AddRequest(context.Context, int, io.Reader, string, model.ConversionInfo) (int, error)
+}
 
 // Struct which provides methods to handle working with requests.
 type ReqHandler struct {
