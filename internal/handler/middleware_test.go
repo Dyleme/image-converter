@@ -50,6 +50,13 @@ func TestCheckJwt(t *testing.T) {
 			wantBody:     "12",
 		},
 		{
+			testName: "empty auth header",
+			initHeader: func(req *http.Request) {
+			},
+			wantStatus: http.StatusUnauthorized,
+			wantBody:   `{"message":"empty auth header"}`,
+		},
+		{
 			testName: "multiply auth headers",
 			initHeader: func(req *http.Request) {
 				token, _ := jwt.CreateToken(context.Background(), time.Hour, 12)
@@ -69,7 +76,7 @@ func TestCheckJwt(t *testing.T) {
 			wantBody:   `{"message":"invalid authentication method"}`,
 		},
 		{
-			testName: "invalide auth method",
+			testName: "invalide jwt token",
 			initHeader: func(req *http.Request) {
 				token, _ := jwt.CreateToken(context.Background(), time.Hour, 12)
 				req.Header.Add("Authorization", "Bearer "+token+"to invalid")
