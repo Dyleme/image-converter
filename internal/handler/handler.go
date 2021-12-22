@@ -1,11 +1,8 @@
 package handler
 
 import (
-	"context"
-	"io"
 	"net/http"
 
-	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
@@ -27,33 +24,9 @@ func New(authHand AuthenticationHandler, reqHandler RequestHandler, downHandler 
 		logger: logger}
 }
 
-// Autharizater is an interface which has methods to create and validate user.
-type Autharizater interface {
-	CreateUser(ctx context.Context, user model.User) (int, error)
-	ValidateUser(ctx context.Context, user model.User) (string, error)
-}
-
-// Requester is an interface which has methods to get, delete and add requests.
-type Requester interface {
-	GetRequests(ctx context.Context, userID int) ([]model.Request, error)
-	GetRequest(ctx context.Context, userID int, reqID int) (*model.Request, error)
-	DeleteRequest(ctx context.Context, userID int, reqID int) error
-	AddRequest(context.Context, int, io.Reader, string, model.ConversionInfo) (int, error)
-}
-
-// Downloader is an interface which has method to download image.
-type Downloader interface {
-	DownloadImage(ctx context.Context, userID, imageID int) ([]byte, error)
-}
-
 type AuthenticationHandler interface {
 	Login(w http.ResponseWriter, r *http.Request)
 	Register(w http.ResponseWriter, r *http.Request)
-}
-
-type H interface {
-	AuthenticationHandler
-	DownloadHandler
 }
 
 type RequestHandler interface {
@@ -84,7 +57,7 @@ func (h *Handler) InitRouters() *mux.Router {
 	authRouter.HandleFunc("/download/image/{id}", h.downHandler.DownloadImage).Methods(http.MethodGet)
 
 	router.Use(h.logging)
-	authRouter.Use(h.checkJWT)
+	authRouter.Use(CheckJWT)
 
 	return router
 }
