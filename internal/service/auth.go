@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Dyleme/image-coverter/internal/jwt"
@@ -94,7 +95,7 @@ var ErrWrongPassword = errors.New("wrong password")
 func (s *AuthService) ValidateUser(ctx context.Context, user model.User) (string, error) {
 	hash, id, err := s.repo.GetPasswordHashAndID(ctx, user.Nickname)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("validate user %w", err)
 	}
 
 	if !s.hashGen.IsValidPassword(user.Password, hash) {

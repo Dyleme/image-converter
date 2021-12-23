@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/minio/minio-go"
 )
@@ -28,7 +29,7 @@ type MinioConfig struct {
 func NewMinioStorage(conf MinioConfig) (*MinioStorage, error) {
 	cl, err := minio.New(conf.Endpoint, conf.AccessKeyID, conf.SecretAccessKey, conf.UseSSL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("can not initialize storage: %w", err)
 	}
 
 	return &MinioStorage{client: *cl}, nil
@@ -39,7 +40,7 @@ func (m *MinioStorage) GetFile(ctx context.Context, path string) ([]byte, error)
 	exist, err := m.client.BucketExists("images")
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cant not get file: %w", err)
 	}
 
 	if !exist {
@@ -48,14 +49,14 @@ func (m *MinioStorage) GetFile(ctx context.Context, path string) ([]byte, error)
 
 	obj, err := m.client.GetObject("images", path, minio.GetObjectOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cant not get file: %w", err)
 	}
 
 	var bf bytes.Buffer
 	_, err = bf.ReadFrom(obj)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cant not get file: %w", err)
 	}
 
 	return bf.Bytes(), err
@@ -65,7 +66,7 @@ func (m *MinioStorage) GetFile(ctx context.Context, path string) ([]byte, error)
 func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName string, data []byte) (string, error) {
 	exist, err := m.client.BucketExists("images")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("can not upload file: %w", err)
 	}
 
 	if !exist {
@@ -82,7 +83,7 @@ func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName stri
 	_, err = m.client.PutObject("images", fileName, bf, int64(bf.Len()), minio.PutObjectOptions{})
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("can not upload file: %w", err)
 	}
 
 	return fileName, nil

@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Dyleme/image-coverter/internal/logging"
@@ -26,7 +27,7 @@ func NewAwsStorage(bucketName string) (*AwsStorage, error) {
 		Region: aws.String("eu-central-1"),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to initialize session %w", err)
 	}
 
 	uploader := s3manager.NewUploader(sess)
@@ -34,6 +35,8 @@ func NewAwsStorage(bucketName string) (*AwsStorage, error) {
 
 	return &AwsStorage{session: sess, uploader: uploader, downloader: downloader, bucketName: bucketName}, nil
 }
+
+var ErrReadIsEmpty = errors.New("read empty file")
 
 // GetFile is used to get file from S3 storage.
 // Returns an error, any occurs.
@@ -51,11 +54,11 @@ func (a *AwsStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
 	n, err := a.downloader.Download(buf, downParams)
 
 	if n == 0 {
-		return nil, fmt.Errorf("didn't read")
+		return nil, ErrReadIsEmpty
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get file: %w", err)
 	}
 
 	return buf.Bytes(), nil
@@ -77,7 +80,7 @@ func (a *AwsStorage) UploadFile(ctx context.Context, userID int, fileName string
 	_, err := a.uploader.Upload(upParams)
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("upload file: %w", err)
 	}
 
 	return fileName, nil

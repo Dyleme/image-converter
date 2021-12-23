@@ -34,23 +34,23 @@ Also you can provide convolution ratio using -r flag`,
 func addRequest(path string, ratio float32, newType string) error {
 	req, err := createMultipartRequest(path, ratio, newType)
 	if err != nil {
-		return err
+		return fmt.Errorf("add request: %w", err)
 	}
 
 	err = auth(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("add request: %w", err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("add request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("add request: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -66,7 +66,7 @@ func addRequest(path string, ratio float32, newType string) error {
 func createMultipartRequest(path string, ratio float32, fileType string) (*http.Request, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create multipart request: %w", err)
 	}
 	defer file.Close()
 
@@ -75,12 +75,12 @@ func createMultipartRequest(path string, ratio float32, fileType string) (*http.
 
 	part, err := writer.CreateFormFile("Image", path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create multipart request: %w", err)
 	}
 
 	_, err = io.Copy(part, file)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create multipart request: %w", err)
 	}
 
 	err = writer.WriteField("CompressionInfo",
@@ -89,17 +89,17 @@ func createMultipartRequest(path string, ratio float32, fileType string) (*http.
 			"newType": "`+fileType+`"
 			}`)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create multipart request: %w", err)
 	}
 
 	err = writer.Close()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create multipart request: %w", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, url+"/requests/image", body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create multipart request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())

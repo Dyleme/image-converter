@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 )
 
@@ -19,14 +20,14 @@ func NewLocalStorage(path string) *LocalStorage {
 func (s *LocalStorage) GetFile(fullPath string) ([]byte, error) {
 	file, err := os.Open(fullPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("can not get file: %w", err)
 	}
 
 	var bf bytes.Buffer
 
 	_, err = bf.ReadFrom(file)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("can not get file: %w", err)
 	}
 
 	return bf.Bytes(), err
@@ -39,12 +40,15 @@ func (s *LocalStorage) UploadFile(userID int, fileName string, data []byte) (str
 
 	file, err := os.Create(fullPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("can not upload file")
 	}
 
 	_, err = file.Write(data)
+	if err != nil {
+		return "", fmt.Errorf("can not upload file")
+	}
 
-	return fullPath, err
+	return fullPath, nil
 }
 
 // DeleteFile delte file whick path is fullPath.

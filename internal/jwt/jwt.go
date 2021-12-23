@@ -60,7 +60,7 @@ func ParseToken(ctx context.Context, tokenString string) (int, error) {
 	})
 
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("parse token: %w", err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)

@@ -67,10 +67,26 @@ func NewRequestService(repo Requester, stor Storager, proc ImageProcesser) *Requ
 func (s *RequestService) GetRequests(ctx context.Context, userID int) ([]model.Request, error) {
 	reqs, err := s.repo.GetRequests(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get reqeusts: %w", err)
 	}
 
 	return reqs, nil
+}
+
+type RatioNotInRangeError struct {
+	ratio float32
+}
+
+func (e *RatioNotInRangeError) Error() string {
+	return fmt.Sprintf("ration should be between 0 and 1, ratio is %v", e.ratio)
+}
+
+type FilenameWithoutPotinError struct {
+	filename string
+}
+
+func (e *FilenameWithoutPotinError) Error() string {
+	return fmt.Sprintf("filename should include point, filename is %s", e.filename)
 }
 
 // AddRequest return the id of the added request or error if any occurs.
@@ -79,11 +95,15 @@ func (s *RequestService) GetRequests(ctx context.Context, userID int) ([]model.R
 // add request to the repo with repo.AddRequest.
 func (s *RequestService) AddRequest(ctx context.Context, userID int, file io.Reader,
 	fileName string, convInfo model.ConversionInfo) (int, error) {
+	if convInfo.Ratio > 1 || convInfo.Ratio <= 0 {
+		return 0, &RatioNotInRangeError{convInfo.Ratio}
+	}
+
 	reqTime := time.Now()
 
 	pointIndex := strings.LastIndex(fileName, ".")
 	if pointIndex == -1 {
-		return 0, fmt.Errorf("no point in filename")
+		return 0, &FilenameWithoutPotinError{fileName}
 	}
 
 	oldType := fileName[pointIndex+1:]
@@ -242,7 +262,7 @@ func (s *RequestService) Convert(ctx context.Context, data *rabbitmq.ConversionD
 
 	err := s.repo.UpdateRequestStatus(ctx, data.ReqID, repository.StatusProcessing)
 	if err != nil {
-		logger.Warn(fmt.Errorf("repo update status in request: %w", err))
+		logger.Warn(fmt.Errorf("repo update: %w", err))
 	}
 
 	logger.WithField("name", data.FileName).Info("start image conversion")

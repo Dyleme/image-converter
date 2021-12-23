@@ -82,7 +82,7 @@ func TestCheckJwt(t *testing.T) {
 				req.Header.Add("Authorization", "Bearer "+token+"to invalid")
 			},
 			wantStatus: http.StatusUnauthorized,
-			wantBody:   `{"message":"middleware: illegal base64 data at input byte 45"}`,
+			wantBody:   `{"message":"middleware: parse token: illegal base64 data at input byte 45"}`,
 		},
 	}
 	for _, tc := range testCases {

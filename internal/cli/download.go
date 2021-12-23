@@ -43,29 +43,29 @@ To get in you can run "requests" command`,
 func downloadFile(id int, path string) error {
 	req, err := http.NewRequest(http.MethodGet, url+"/download/image/"+strconv.Itoa(id), http.NoBody)
 	if err != nil {
-		return err
+		return fmt.Errorf("download file: %w", err)
 	}
 
 	err = auth(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("download file: %w", err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("download file: %w", err)
 	}
 	defer resp.Body.Close()
 
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, modeWriteReadExecute)
 	if err != nil {
-		return err
+		return fmt.Errorf("download file: %w", err)
 	}
 	defer file.Close()
 
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("download file: %w", err)
 	}
 
 	return nil
