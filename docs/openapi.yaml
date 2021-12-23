@@ -11,10 +11,12 @@ info:
     url: github.com/Dyleme
     email: aleksei.dyavgo@gmail.com
 servers:
+  - url: http://localhost:8080
+    description: local
   - url: https://api.convert-image.org
     description: main server
 paths:
-  /images/{id}/download:
+  /download/image/{id}:
     get:
       summary: Get an image by image id
       description: "Get an image by it's id. Return image if it's id exists and this user have made this conversion"
@@ -49,13 +51,6 @@ paths:
       tags:
       - Requests
       description: "Returns all operations made by the user"
-      parameters:
-      - name: status
-        in: query
-        description: "You can tell what **Operation status** do you need. Avaivable statuses: *Queued, Processing, Done*."
-        schema:
-          type: string
-          enum: ["queued", "processing", "done"]
       responses: 
         200:
           description: Successful response
@@ -108,7 +103,7 @@ paths:
                 title: Request ID
                 type: object
                 properties:
-                  id:
+                  reqeustID:
                     type: integer
                     description: Request id
           
@@ -152,10 +147,10 @@ paths:
             type: integer
             minimum: 1
           required: true
-          description: Numeric ID of the conversion to delete
+          description: Numeric ID of the request to delete
       responses:
-        204:
-          description: Succesful delete conversion
+        200:
+          description: Succesful delete reqeust
         400:
           $ref: '#/components/responses/WrongResourceIdError'
         403:
@@ -258,23 +253,38 @@ components:
       type: object
       description: 'Request'
       properties: 
-        originalImage:
-          $ref: '#/components/schemas/Image'
-        processedImage:
-          $ref: '#/components/schemas/Image'
+        id:
+          type: integer
+          description: Reqeust id
         status:
           type: string
           description: Status of processing an image
-        startTime:
+        reqeustTime:
           type: string
           description: Start time
-        endTime:
+        completionTime:
           type: string
           description: End time
-        operationId:
+        originalID:
           type: integer
-          description: Id of the operation
+          description: Original image id
+        processedID:
+          type: integer
+          description: Processed image id
+        ratio:
+          type: number
+          format: float
+          description: conversion ratio
+        originalType:
+          type: string
+          description: Type of the original image
+        processedType:
+          type: string
+          description: Type of the converterd image
           
+
+          
+
     User:
       type: object
       properties: 
@@ -291,7 +301,7 @@ components:
       type: object
       description: "JWT token"
       properties:
-        JWT:
+        jwt:
           type: string
           description: JWT toketn of the user
         
