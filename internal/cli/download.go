@@ -15,7 +15,7 @@ var (
 	imageID  int
 )
 
-const modeWriteReadExecute = 0755
+const modeWriteReadExecute = 0o755
 
 // downloadCmd represents the download command.
 var downloadCmd = &cobra.Command{

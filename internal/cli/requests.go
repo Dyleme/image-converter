@@ -36,7 +36,7 @@ var requestsCmd = &cobra.Command{
 }
 
 func allRequests() error {
-	req, err := http.NewRequest(http.MethodGet, url+"/requests", nil)
+	req, err := http.NewRequest(http.MethodGet, url+"/requests", http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func allRequests() error {
 }
 
 func oneRequest(id int) error {
-	req, err := http.NewRequest(http.MethodGet, url+"/requests/"+strconv.Itoa(id), nil)
+	req, err := http.NewRequest(http.MethodGet, url+"/requests/"+strconv.Itoa(id), http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func oneRequest(id int) error {
 }
 
 func deleteRequest(id int) error {
-	req, err := http.NewRequest(http.MethodDelete, url+"/requests/"+strconv.Itoa(id), nil)
+	req, err := http.NewRequest(http.MethodDelete, url+"/requests/"+strconv.Itoa(id), http.NoBody)
 	if err != nil {
 		return err
 	}
