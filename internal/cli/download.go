@@ -41,7 +41,7 @@ To get in you can run "requests" command`,
 }
 
 func downloadFile(id int, path string) error {
-	req, err := http.NewRequest(http.MethodGet, url+"/download/image/"+strconv.Itoa(id), nil)
+	req, err := http.NewRequest(http.MethodGet, url+"/download/image/"+strconv.Itoa(id), http.NoBody)
 	if err != nil {
 		return err
 	}
