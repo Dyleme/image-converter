@@ -62,10 +62,10 @@ Database structure
 ![database](docs/database.png)
 
 Service structure
-![sevice](docs\applicatoin.png)
+![sevice](docs/applicatoin.png)
 
 Running structure
-![runninng](docs\running.png)
+![runninng](docs/running.png)
 
 Deploy structure
-![deploy](docs\deploy.png)
+![deploy](docs/deploy.png)
