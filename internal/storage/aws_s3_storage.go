@@ -12,9 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
-var bucketName = "dziauho-image-converter"
-
 type AwsStorage struct {
+	bucketName string
 	session    *session.Session
 	uploader   *s3manager.Uploader
 	downloader *s3manager.Downloader
@@ -22,7 +21,7 @@ type AwsStorage struct {
 
 // Initialize AWS S3 storage using environment values.
 // Return error if any occurs while initializing session.
-func NewAwsStorage() (*AwsStorage, error) {
+func NewAwsStorage(bucketName string) (*AwsStorage, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("eu-central-1"),
 	})
@@ -33,7 +32,7 @@ func NewAwsStorage() (*AwsStorage, error) {
 	uploader := s3manager.NewUploader(sess)
 	downloader := s3manager.NewDownloader(sess)
 
-	return &AwsStorage{session: sess, uploader: uploader, downloader: downloader}, nil
+	return &AwsStorage{session: sess, uploader: uploader, downloader: downloader, bucketName: bucketName}, nil
 }
 
 // GetFile is used to get file from S3 storage.
@@ -43,7 +42,7 @@ func (a *AwsStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
 	logger.Infof("getting file %v", path)
 
 	downParams := &s3.GetObjectInput{
-		Bucket: aws.String(bucketName),
+		Bucket: aws.String(a.bucketName),
 		Key:    aws.String(path),
 	}
 
@@ -70,7 +69,7 @@ func (a *AwsStorage) UploadFile(ctx context.Context, userID int, fileName string
 
 	fileName = generateName(fileName)
 	upParams := &s3manager.UploadInput{
-		Bucket: aws.String(bucketName),
+		Bucket: aws.String(a.bucketName),
 		Key:    aws.String(fileName),
 		Body:   bytes.NewBuffer(data),
 	}
@@ -90,7 +89,7 @@ func (a *AwsStorage) DeleteFile(ctx context.Context, path string) error {
 	svc := s3.New(a.session)
 
 	_, err := svc.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: &bucketName,
+		Bucket: &a.bucketName,
 		Key:    &path,
 	})
 

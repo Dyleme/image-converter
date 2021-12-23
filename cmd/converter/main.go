@@ -36,7 +36,7 @@ func main() {
 
 	reqRep := repository.NewReqPostgres(db)
 
-	stor, err := storage.NewAwsStorage()
+	stor, err := storage.NewAwsStorage(os.Getenv("S3BUCKET"))
 	if err != nil {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
