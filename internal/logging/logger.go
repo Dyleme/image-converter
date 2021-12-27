@@ -13,12 +13,12 @@ type contextKey string
 const loggerKey = contextKey("logger")
 
 // NewLogger returns configurated logrus.Logger.
-func NewLogger() *logrus.Logger {
+func NewLogger(level logrus.Level) *logrus.Logger {
 	return &logrus.Logger{
 		Out:       os.Stderr,
 		Formatter: new(logrus.TextFormatter),
 		Hooks:     make(logrus.LevelHooks),
-		Level:     logrus.InfoLevel,
+		Level:     level,
 	}
 }
 
@@ -31,7 +31,7 @@ var (
 // Logger can be created by this function only once.
 func DefaultLogger() *logrus.Logger {
 	defaultLoggerOnce.Do(func() {
-		defaultLogger = NewLogger()
+		defaultLogger = NewLogger(logrus.InfoLevel)
 	})
 
 	return defaultLogger

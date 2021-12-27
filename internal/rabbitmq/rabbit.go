@@ -8,7 +8,6 @@ import (
 
 	"github.com/Dyleme/image-coverter/internal/logging"
 	"github.com/Dyleme/image-coverter/internal/model"
-	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
@@ -45,18 +44,18 @@ type ConversionData struct {
 // NewRabbitSender returns *RabbitSender, which is ready to send messages.
 // NewRabbitSender at first initialize connection with RabbitMQ server,
 // than it initialize channel with broker.
-func NewRabbitSender(c Config) (*RabbitSender, error) {
+func NewRabbitSender(c *Config) (*RabbitSender, error) {
 	connStr := fmt.Sprintf("amqps://%s:%s@%s:%s/", c.User, c.Password, c.Host, c.Port)
 	conn, err := amqp.Dial(connStr)
 
 	if err != nil {
-		logrus.Fatalf("unable to make connection to rabbitMQ: %v", err)
+		// logrus.Fatalf("unable to make connection to rabbitMQ: %v", err)
 		return nil, fmt.Errorf("unable to make connection to rabbitMQ: %w", err)
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		logrus.Fatalf("falied in open a channel: %v", err)
+		// logrus.Fatalf("falied in open a channel: %v", err)
 		return nil, fmt.Errorf("falied in open a channel: %w", err)
 	}
 
@@ -67,7 +66,7 @@ func NewRabbitSender(c Config) (*RabbitSender, error) {
 	)
 
 	if err != nil {
-		logrus.Fatalf("falied in open a channel: %v", err)
+		// logrus.Fatalf("falied in open a channel: %v", err)
 		return nil, fmt.Errorf("falied in open a channel: %w", err)
 	}
 
@@ -128,7 +127,7 @@ type Converter interface {
 // Receive is method which is used to get messages from RabbitMQ and then convert images.
 // At first this function initialize connection, channel and queue to with RabbitMQ.
 // Then it in infinite loop get messages from queue, convert image and process it.
-func Receive(ctx context.Context, conv Converter, conf Config) {
+func Receive(ctx context.Context, conv Converter, conf *Config) {
 	logger := logging.FromContext(ctx)
 	connStr := fmt.Sprintf("amqps://%s:%s@%s:%s/", conf.User, conf.Password, conf.Host, conf.Port)
 	conn, err := amqp.Dial(connStr)

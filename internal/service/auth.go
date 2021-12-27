@@ -4,15 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
-	"github.com/Dyleme/image-coverter/internal/jwt"
 	"github.com/Dyleme/image-coverter/internal/model"
 	"golang.org/x/crypto/bcrypt"
-)
-
-const (
-	tokenTTL = 4 * time.Hour
 )
 
 // HashGenerator interface providing you the ability to generate password hash
@@ -51,20 +45,7 @@ type Autharizater interface {
 // JwtGenerator is an interface that provides method to create jwt tokens.
 type JwtGenerator interface {
 	// Create token is method that can create jwt tokens.
-	CreateToken(ctx context.Context, tokenTTL time.Duration, id int) (string, error)
-}
-
-// JwtGen struct implements JwtGenerator inteface with the jwt package.
-type JwtGen struct{}
-
-// NewJwtGem is a constructor to the JwtGen.
-func NewJwtGen() *JwtGen {
-	return &JwtGen{}
-}
-
-// CreateToken method creates jwt token using jwt package.
-func (gen *JwtGen) CreateToken(ctx context.Context, tokenTTL time.Duration, id int) (string, error) {
-	return jwt.CreateToken(ctx, tokenTTL, id)
+	CreateToken(ctx context.Context, id int) (string, error)
 }
 
 // AuthService struct provides the ability to create user and validate it.
@@ -102,5 +83,5 @@ func (s *AuthService) ValidateUser(ctx context.Context, user model.User) (string
 		return "", ErrWrongPassword
 	}
 
-	return s.jwtGen.CreateToken(ctx, tokenTTL, id)
+	return s.jwtGen.CreateToken(ctx, id)
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -13,7 +12,19 @@ import (
 
 type Key string
 
-var signedKey = os.Getenv("SIGNEDKEY")
+type JwtGen struct {
+	signedKey string
+	ttl       time.Duration
+}
+
+type Config struct {
+	SignedKey string
+	TTL       time.Duration
+}
+
+func NewJwtGen(config *Config) *JwtGen {
+	return &JwtGen{signedKey: config.SignedKey}
+}
 
 const (
 	KeyUserID Key = "keyUserID"
@@ -37,26 +48,26 @@ type tokenClaims struct {
 }
 
 // CreateToken function generate token with provided TTL and user id.
-func CreateToken(ctx context.Context, tokenTTL time.Duration, id int) (string, error) {
+func (g *JwtGen) CreateToken(_ context.Context, id int) (string, error) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		jwt.StandardClaims{
 			IssuedAt:  time.Now().Unix(),
-			ExpiresAt: time.Now().Add(tokenTTL).Unix(),
+			ExpiresAt: time.Now().Add(g.ttl).Unix(),
 		},
 		id,
 	})
 
-	return jwtToken.SignedString([]byte(signedKey))
+	return jwtToken.SignedString([]byte(g.signedKey))
 }
 
 // ParseToken function rerurns user id from JWT token, if this token is liquid.
-func ParseToken(ctx context.Context, tokenString string) (int, error) {
+func (g *JwtGen) ParseToken(_ context.Context, tokenString string) (int, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return 0, UnexpectedSingingMethodError{t.Header["alg"]}
 		}
 
-		return []byte(signedKey), nil
+		return []byte(g.signedKey), nil
 	})
 
 	if err != nil {

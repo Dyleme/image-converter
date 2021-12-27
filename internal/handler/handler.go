@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/Dyleme/image-coverter/internal/jwt"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
@@ -41,10 +42,13 @@ type DownloadHandler interface {
 }
 
 // InitRouters() method is used to initialize all endopoints with the routers.
-func (h *Handler) InitRouters() *mux.Router {
+func (h *Handler) InitRouters(jwtGen *jwt.JwtGen) *mux.Router {
 	router := mux.NewRouter()
+	router.Use(h.logTime)
 
 	authRouter := router.NewRoute().Subrouter()
+	jwtChecker := JwtChecker{gen: *jwtGen}
+	authRouter.Use(jwtChecker.CheckJWT)
 
 	router.HandleFunc("/auth/register", h.authHandler.Register).Methods(http.MethodPost)
 	router.HandleFunc("/auth/login", h.authHandler.Login).Methods(http.MethodPost)
@@ -55,9 +59,6 @@ func (h *Handler) InitRouters() *mux.Router {
 	authRouter.HandleFunc("/requests/{reqID}", h.reqHandler.DeleteRequest).Methods(http.MethodDelete)
 
 	authRouter.HandleFunc("/download/image/{id}", h.downHandler.DownloadImage).Methods(http.MethodGet)
-
-	router.Use(h.logging)
-	authRouter.Use(CheckJWT)
 
 	return router
 }
