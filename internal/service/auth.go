@@ -33,8 +33,8 @@ func (h *HashGen) IsValidPassword(password string, hash []byte) bool {
 	return errNotEqual == nil
 }
 
-// Autharizater is an interface which provides methods to implement with repository.
-type Autharizater interface {
+// AuthRepo is an interface which provides methods to implement with repository.
+type AuthRepo interface {
 	// CreateUserMethod creates user in the repository.
 	CreateUser(ctx context.Context, user model.User) (int, error)
 
@@ -50,13 +50,13 @@ type JwtGenerator interface {
 
 // AuthService struct provides the ability to create user and validate it.
 type AuthService struct {
-	repo    Autharizater
+	repo    AuthRepo
 	hashGen HashGenerator
 	jwtGen  JwtGenerator
 }
 
 // NewAuthService is the constructor to the AuthService.
-func NewAuthSevice(repo Autharizater, hashGen HashGenerator, jwtGen JwtGenerator) *AuthService {
+func NewAuthSevice(repo AuthRepo, hashGen HashGenerator, jwtGen JwtGenerator) *AuthService {
 	return &AuthService{repo: repo, hashGen: hashGen, jwtGen: jwtGen}
 }
 

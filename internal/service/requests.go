@@ -32,8 +32,8 @@ const (
 
 var ErrUnsupportedType = errors.New("unsopported type")
 
-// Requester is an interface which provides methods to implement with the reposistory.
-type Requester interface {
+// RequestRepo is an interface which provides methods to implement with the reposistory.
+type RequestRepo interface {
 	GetRequests(ctx context.Context, id int) ([]model.Request, error)
 	GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error)
 	AddRequest(ctx context.Context, req *model.Request, userID int) (int, error)
@@ -47,7 +47,7 @@ type Requester interface {
 
 // RequestService is a struct provides the abitility to get, add, delete and update requests.
 type RequestService struct {
-	repo      Requester
+	repo      RequestRepo
 	storage   Storager
 	processor ImageProcesser
 }
@@ -58,7 +58,7 @@ type ImageProcesser interface {
 }
 
 // NewRequestService is a constructor to the RequestService.
-func NewRequestService(repo Requester, stor Storager, proc ImageProcesser) *RequestService {
+func NewRequestService(repo RequestRepo, stor Storager, proc ImageProcesser) *RequestService {
 	return &RequestService{repo: repo, storage: stor, processor: proc}
 }
 

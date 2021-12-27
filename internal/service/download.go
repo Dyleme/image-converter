@@ -8,19 +8,19 @@ import (
 )
 
 // Download is an interface that provide method gets the image url from the repositoury.
-type Downloader interface {
+type DownloadRepo interface {
 	// GetImageUrl returns the image url.
 	GetImageURL(ctx context.Context, userID int, imageID int) (string, error)
 }
 
 // DownloadService struct provides the ability to download images from the storage using its id.
 type DownloadService struct {
-	repo Downloader
+	repo DownloadRepo
 	stor Storager
 }
 
 // NewDonwloadService is the constructor to the DownloadService.
-func NewDownloadService(repo Downloader, stor Storager) *DownloadService {
+func NewDownloadService(repo DownloadRepo, stor Storager) *DownloadService {
 	return &DownloadService{repo: repo, stor: stor}
 }
 
