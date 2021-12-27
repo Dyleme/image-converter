@@ -22,21 +22,21 @@ type Requester interface {
 }
 
 // Struct which provides methods to handle working with requests.
-type ReqHandler struct {
+type Request struct {
 	logger         *logrus.Logger
 	requestService Requester
 }
 
 // Constructor for ReqHandler.
-func NewReqHandler(req Requester, logger *logrus.Logger) *ReqHandler {
-	return &ReqHandler{requestService: req, logger: logger}
+func NewRequest(req Requester, logger *logrus.Logger) *Request {
+	return &Request{requestService: req, logger: logger}
 }
 
 // AllRequstHandler is handler which get all reqests by the userID.
 // User id is getted from context.
 // Handler calls service method GetRequest.
 // Method response with json representation of request or error, if any occurs.
-func (rh *ReqHandler) GetAllRequests(w http.ResponseWriter, r *http.Request) {
+func (rh *Request) GetAllRequests(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	userID, err := jwt.GetUserFromContext(ctx)
@@ -60,7 +60,7 @@ func (rh *ReqHandler) GetAllRequests(w http.ResponseWriter, r *http.Request) {
 // File is getted like a part from multipartForm.
 // Information about convetsion is took like a part of multopartForm.
 // Handler calls service method AddRequest.
-func (rh *ReqHandler) AddRequest(w http.ResponseWriter, r *http.Request) {
+func (rh *Request) AddRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	userID, err := jwt.GetUserFromContext(ctx)
@@ -107,7 +107,7 @@ func (rh *ReqHandler) AddRequest(w http.ResponseWriter, r *http.Request) {
 // User id is getted from context.
 // Request id is getted from query.
 // Handler calls service method GetRequest.
-func (rh *ReqHandler) GetRequest(w http.ResponseWriter, r *http.Request) {
+func (rh *Request) GetRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	userID, err := jwt.GetUserFromContext(ctx)
@@ -144,7 +144,7 @@ func (rh *ReqHandler) GetRequest(w http.ResponseWriter, r *http.Request) {
 // User id is getted from context.
 // Request id is getted from query.
 // Handler calls service method DeleteRequest.
-func (rh *ReqHandler) DeleteRequest(w http.ResponseWriter, r *http.Request) {
+func (rh *Request) DeleteRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	userID, err := jwt.GetUserFromContext(ctx)

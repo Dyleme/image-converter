@@ -17,14 +17,14 @@ type Autharizater interface {
 }
 
 // Struct which provides methods to handle Login and Registration.
-type AuthHandler struct {
+type Auth struct {
 	logger      *logrus.Logger
 	authService Autharizater
 }
 
 // Constructor for AuthHandler.
-func NewAuthHandler(auth Autharizater, logger *logrus.Logger) *AuthHandler {
-	return &AuthHandler{authService: auth, logger: logger}
+func NewAuth(auth Autharizater, logger *logrus.Logger) *Auth {
+	return &Auth{authService: auth, logger: logger}
 }
 
 type NotFilledFieldError struct {
@@ -39,7 +39,7 @@ func (e *NotFilledFieldError) Error() string {
 // Login is method which decode request body to model.User
 // And validate this user using ValidateUser service method.
 // Method response with jwt token or error, if any occurs.
-func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (ah *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var input model.User
@@ -79,7 +79,7 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // It decodes request body to model.User
 // and calls service method CreateUser.
 // Method response with user id or error, if any occurs.
-func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (ah *Auth) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var input model.User

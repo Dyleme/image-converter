@@ -125,7 +125,7 @@ func Test(t *testing.T) {
 			}
 
 			downMock := mocks.NewMockDownloader(mockCtr)
-			downHandler := handler.NewDownHandler(downMock, &logrus.Logger{})
+			downHandler := handler.NewDownload(downMock, &logrus.Logger{})
 
 			req = tc.configure(req, downMock)
 

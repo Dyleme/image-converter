@@ -41,7 +41,7 @@ func main() {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
 
-	reqService := service.NewRequestService(reqRep, stor, &emptySender{})
+	reqService := service.NewRequest(reqRep, stor, &emptySender{})
 
 	rabbitmq.Receive(ctx, reqService, conf.RabbitMQ)
 }

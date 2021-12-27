@@ -46,13 +46,13 @@ func main() {
 
 	jwtGen := jwt.NewJwtGen(conf.JWT)
 
-	authService := service.NewAuthSevice(authRep, &service.HashGen{}, jwtGen)
-	reqService := service.NewRequestService(reqRep, stor, rabbitSender)
-	downService := service.NewDownloadService(downRep, stor)
+	authService := service.NewAuth(authRep, &service.HashGen{}, jwtGen)
+	reqService := service.NewRequest(reqRep, stor, rabbitSender)
+	downService := service.NewDownload(downRep, stor)
 
-	authHandler := handler.NewAuthHandler(authService, logger)
-	reqHandler := handler.NewReqHandler(reqService, logger)
-	downHandler := handler.NewDownHandler(downService, logger)
+	authHandler := handler.NewAuth(authService, logger)
+	reqHandler := handler.NewRequest(reqService, logger)
+	downHandler := handler.NewDownload(downService, logger)
 
 	handlers := handler.New(authHandler, reqHandler, downHandler, logger)
 

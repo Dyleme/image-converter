@@ -13,20 +13,20 @@ type DownloadRepo interface {
 	GetImageURL(ctx context.Context, userID int, imageID int) (string, error)
 }
 
-// DownloadService struct provides the ability to download images from the storage using its id.
-type DownloadService struct {
+// Download struct provides the ability to download images from the storage using its id.
+type Download struct {
 	repo DownloadRepo
 	stor Storager
 }
 
 // NewDonwloadService is the constructor to the DownloadService.
-func NewDownloadService(repo DownloadRepo, stor Storager) *DownloadService {
-	return &DownloadService{repo: repo, stor: stor}
+func NewDownload(repo DownloadRepo, stor Storager) *Download {
+	return &Download{repo: repo, stor: stor}
 }
 
 // Download function returns the bytes of the image or (nil, err) if any error occurs.
 // Function gets the imageUrl using repo.GetImgaeURL and get it bytes using stor.GetFile.
-func (s *DownloadService) DownloadImage(ctx context.Context, userID, imageID int) ([]byte, error) {
+func (s *Download) DownloadImage(ctx context.Context, userID, imageID int) ([]byte, error) {
 	logger := logging.FromContext(ctx)
 	imageURL, err := s.repo.GetImageURL(ctx, userID, imageID)
 

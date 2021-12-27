@@ -77,7 +77,7 @@ func TestCreateUser(t *testing.T) {
 
 			generator := &genHashMock{}
 			jwtGnrt := &genJwtMock{}
-			srvc := service.NewAuthSevice(mockAuth, generator, jwtGnrt)
+			srvc := service.NewAuth(mockAuth, generator, jwtGnrt)
 
 			ctx := context.Background()
 
@@ -166,7 +166,7 @@ func TestValidateUser(t *testing.T) {
 			generator := &genHashMock{}
 			jwtGnrt := &genJwtMock{}
 
-			srvc := service.NewAuthSevice(mockAuth, generator, jwtGnrt)
+			srvc := service.NewAuth(mockAuth, generator, jwtGnrt)
 
 			ctx := context.Background()
 			mockAuth.EXPECT().GetPasswordHashAndID(ctx, tc.user.Nickname).Return(tc.repoPsswrd, tc.repoID, tc.repoError).Times(1)

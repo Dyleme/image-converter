@@ -97,7 +97,7 @@ func TestAuthHandler_Login(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			authMock := mocks.NewMockAutharizater(mockCtr)
-			authHandler := handler.NewAuthHandler(authMock, &logrus.Logger{})
+			authHandler := handler.NewAuth(authMock, &logrus.Logger{})
 
 			tc.configure(authMock)
 
@@ -203,7 +203,7 @@ func TestAuthHandler_Register(t *testing.T) {
 
 			tc.configure(authMock)
 
-			authHandler := handler.NewAuthHandler(authMock, &logrus.Logger{})
+			authHandler := handler.NewAuth(authMock, &logrus.Logger{})
 
 			authHandler.Register(rr, req)
 

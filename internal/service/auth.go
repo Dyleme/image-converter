@@ -48,21 +48,21 @@ type JwtGenerator interface {
 	CreateToken(ctx context.Context, id int) (string, error)
 }
 
-// AuthService struct provides the ability to create user and validate it.
-type AuthService struct {
+// Auth struct provides the ability to create user and validate it.
+type Auth struct {
 	repo    AuthRepo
 	hashGen HashGenerator
 	jwtGen  JwtGenerator
 }
 
 // NewAuthService is the constructor to the AuthService.
-func NewAuthSevice(repo AuthRepo, hashGen HashGenerator, jwtGen JwtGenerator) *AuthService {
-	return &AuthService{repo: repo, hashGen: hashGen, jwtGen: jwtGen}
+func NewAuth(repo AuthRepo, hashGen HashGenerator, jwtGen JwtGenerator) *Auth {
+	return &Auth{repo: repo, hashGen: hashGen, jwtGen: jwtGen}
 }
 
 // CreateUser function returns the id of the created user or error if any occures.
 // Function get password hash of the user and creates user and calls CreateUser method of repository.
-func (s *AuthService) CreateUser(ctx context.Context, user model.User) (int, error) {
+func (s *Auth) CreateUser(ctx context.Context, user model.User) (int, error) {
 	user.Password = s.hashGen.GeneratePasswordHash(user.Password)
 	return s.repo.CreateUser(ctx, user)
 }
@@ -73,7 +73,7 @@ var ErrWrongPassword = errors.New("wrong password")
 // In any other sitationds function returns ("", err).
 // Method get password and if calling repo.GetPasswordHashAndID then validates it with the hashGen.IsValidPassword,
 // and create token with the help jwtGen.CreateToken.
-func (s *AuthService) ValidateUser(ctx context.Context, user model.User) (string, error) {
+func (s *Auth) ValidateUser(ctx context.Context, user model.User) (string, error) {
 	hash, id, err := s.repo.GetPasswordHashAndID(ctx, user.Nickname)
 	if err != nil {
 		return "", fmt.Errorf("validate user %w", err)
