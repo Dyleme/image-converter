@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/Dyleme/image-coverter/internal/service/mocks"
 	"github.com/Dyleme/image-coverter/internal/storage"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -106,13 +106,8 @@ func TestGetRequests(t *testing.T) {
 			mockRequest.EXPECT().GetRequests(ctx, tc.userID).Return(tc.repReqs, tc.repErr)
 
 			gotReqs, gotErr := srvc.GetRequests(ctx, tc.userID)
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("want err: %v, got err: %v", tc.wantErr, gotErr)
-			}
-
-			if reflect.DeepEqual(gotReqs, tc.wantErr) {
-				t.Errorf("want reqs: %v, got reqs %v", tc.wantReqs, gotReqs)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.Equal(t, gotReqs, tc.wantReqs)
 		})
 	}
 }
@@ -162,7 +157,7 @@ func TestGetRequest(t *testing.T) {
 			reqID:    5,
 			repReq:   &model.Request{},
 			repErr:   errRepository,
-			wantReq:  &model.Request{},
+			wantReq:  nil,
 			wantErr:  errRepository,
 		},
 	}
@@ -178,14 +173,10 @@ func TestGetRequest(t *testing.T) {
 
 			mockRequest.EXPECT().GetRequest(ctx, tc.userID, tc.reqID).Return(tc.repReq, tc.repErr).Times(1)
 
-			gotReqs, gotErr := srvc.GetRequest(ctx, tc.userID, tc.reqID)
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("want err: %v, got err: %v", tc.wantErr, gotErr)
-			}
+			gotReq, gotErr := srvc.GetRequest(ctx, tc.userID, tc.reqID)
 
-			if reflect.DeepEqual(gotReqs, tc.wantErr) {
-				t.Errorf("want reqs: %v, got reqs %v", tc.wantReq, gotReqs)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.Equal(t, gotReq, tc.wantReq)
 		})
 	}
 }
@@ -301,13 +292,8 @@ func TestAddReqeust(t *testing.T) {
 			gotReqID, gotErr := srvc.AddRequest(ctx, tc.userID, tc.file,
 				tc.fileName, tc.convInfo)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("want error: %v, got error %v", tc.wantErr, gotErr)
-			}
-
-			if gotReqID != tc.wantReqID {
-				t.Errorf("want reqID: %v, got reqID %v", tc.wantReqID, gotReqID)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.Equal(t, gotReqID, tc.wantReqID)
 		})
 	}
 }
@@ -462,9 +448,7 @@ func TestDeleteReqeust(t *testing.T) {
 
 			gotErr := srvc.DeleteRequest(ctx, tc.userID, tc.reqID)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("want error: %v, got error %v", tc.wantErr, gotErr)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
 		})
 	}
 }

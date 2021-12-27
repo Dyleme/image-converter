@@ -3,7 +3,6 @@ package repository_test
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -11,7 +10,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/repository"
-	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 )
 
 func NewReqMock(t *testing.T) (*repository.ReqPostgres, sqlmock.Sqlmock) {
@@ -103,12 +102,8 @@ func TestGetRequest(t *testing.T) {
 
 			gotRequest, gotErr := repo.GetRequest(context.Background(), tc.userID, tc.reqID)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
-			}
-			if !cmp.Equal(gotRequest, tc.wantReq) {
-				t.Errorf("Want request: %v, got request: %v", tc.wantReq, gotRequest)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.Equal(t, gotRequest, tc.wantReq)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)
@@ -162,12 +157,8 @@ func TestAddRequest(t *testing.T) {
 
 			gotID, gotErr := repo.AddRequest(context.Background(), tc.req, tc.userID)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
-			}
-			if gotID != tc.wantID {
-				t.Errorf("Want id: %v, got id: %v", tc.wantID, gotID)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.Equal(t, gotID, tc.wantID)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)
@@ -212,12 +203,10 @@ func TestUpdateRequestStatus(t *testing.T) {
 
 			gotErr := repo.UpdateRequestStatus(context.Background(), tc.reqID, tc.status)
 
+			assert.ErrorIs(t, gotErr, tc.wantErr)
+
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)
-			}
-
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
 			}
 		})
 	}
@@ -259,9 +248,7 @@ func TestAddProcessedImageIDToRequest(t *testing.T) {
 
 			gotErr := repo.AddProcessedImageIDToRequest(context.Background(), tc.reqID, tc.imageID)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)
@@ -306,9 +293,7 @@ func TestAddProcessedTimeToRequest(t *testing.T) {
 
 			gotErr := repo.AddProcessedTimeToRequest(context.Background(), tc.reqID, tc.procTime)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)
@@ -355,12 +340,8 @@ func TestAddImage(t *testing.T) {
 
 			gotID, gotErr := repo.AddImage(context.Background(), tc.userID, *tc.imageInfo)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
-			}
-			if gotID != tc.wantID {
-				t.Errorf("Want id: %v, got id: %v", tc.wantID, gotID)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.Equal(t, gotID, tc.wantID)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)
@@ -427,17 +408,9 @@ func TestDeleteRequest(t *testing.T) {
 
 			gotIm1ID, gotIm2ID, gotErr := repo.DeleteRequest(context.Background(), tc.userID, tc.reqID)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
-			}
-
-			if gotIm1ID != tc.wantIm1ID {
-				t.Errorf("Want image 1 id: %v, got image 1 id: %v", tc.wantIm1ID, gotIm1ID)
-			}
-
-			if gotIm2ID != tc.wantIm2ID {
-				t.Errorf("Want image 2 id: %v, got image 2 id: %v", tc.wantIm1ID, gotIm1ID)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.Equal(t, gotIm2ID, tc.wantIm2ID)
+			assert.Equal(t, gotIm1ID, tc.wantIm1ID)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)
@@ -481,12 +454,8 @@ func TestDeleteImage(t *testing.T) {
 
 			gotURL, gotErr := repo.DeleteImage(context.Background(), tc.userID, tc.imageID)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
-			}
-			if gotURL != tc.wantURL {
-				t.Errorf("Want url: %v, got url: %v", tc.wantURL, gotURL)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.Equal(t, gotURL, tc.wantURL)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)

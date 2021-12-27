@@ -1,10 +1,8 @@
 package repository_test
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"regexp"
 	"testing"
@@ -12,6 +10,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/repository"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateUser(t *testing.T) {
@@ -54,13 +53,8 @@ func TestCreateUser(t *testing.T) {
 
 			gotID, gotErr := repo.CreateUser(context.Background(), tc.user)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
-			}
-
-			if gotID != tc.wantID {
-				t.Errorf("Want id : %v, got id: %v", tc.wantID, gotID)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.Equal(t, gotID, tc.wantID)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)
@@ -118,17 +112,9 @@ func TestGetPasswordAndID(t *testing.T) {
 
 			gotPassword, gotID, gotErr := repo.GetPasswordHashAndID(context.Background(), tc.userNickname)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
-			}
-
-			if gotID != tc.wantID {
-				t.Errorf("Want id : %v, got id: %v", tc.wantID, gotID)
-			}
-
-			if !bytes.Equal(gotPassword, tc.wantPassword) {
-				t.Errorf("Want password : %v, got password: %v", tc.wantPassword, gotPassword)
-			}
+			assert.Equal(t, gotID, tc.wantID)
+			assert.Equal(t, gotPassword, tc.wantPassword)
+			assert.ErrorIs(t, gotErr, tc.wantErr)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)

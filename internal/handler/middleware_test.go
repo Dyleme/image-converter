@@ -12,6 +12,7 @@ import (
 
 	"github.com/Dyleme/image-coverter/internal/handler"
 	"github.com/Dyleme/image-coverter/internal/jwt"
+	"github.com/stretchr/testify/assert"
 )
 
 type handlerMock struct{}
@@ -122,13 +123,8 @@ func TestCheckJwt(t *testing.T) {
 
 			checker.CheckJWT(&handMock).ServeHTTP(rr, req)
 
-			if status := rr.Code; status != tc.wantStatus {
-				t.Errorf("want status %v, got status %v", tc.wantStatus, status)
-			}
-
-			if body := rr.Body.String(); body != tc.wantBody {
-				t.Errorf("want body %s, got body %s", tc.wantBody, body)
-			}
+			assert.Equal(t, rr.Code, tc.wantStatus)
+			assert.Equal(t, rr.Body.String(), tc.wantBody)
 		})
 	}
 }
