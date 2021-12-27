@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
-	"os"
 
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 
+	"github.com/Dyleme/image-coverter/internal/config"
 	"github.com/Dyleme/image-coverter/internal/handler"
+	"github.com/Dyleme/image-coverter/internal/jwt"
 	"github.com/Dyleme/image-coverter/internal/logging"
 	"github.com/Dyleme/image-coverter/internal/rabbitmq"
 	"github.com/Dyleme/image-coverter/internal/repository"
@@ -16,16 +18,14 @@ import (
 )
 
 func main() {
-	logger := logging.NewLogger()
+	logger := logging.NewLogger(logrus.InfoLevel)
 
-	db, err := repository.NewPostgresDB(&repository.DBConfig{
-		UserName: os.Getenv("DBUSERNAME"),
-		Password: os.Getenv("DBPASSWORD"),
-		Host:     os.Getenv("DBHOST"),
-		Port:     os.Getenv("DBPORT"),
-		DBName:   os.Getenv("DBNAME"),
-		SSLMode:  os.Getenv("DBSSLMODE"),
-	})
+	conf, err := config.InitConfig()
+	if err != nil {
+		logger.Fatalf("wrong config: %s", err)
+	}
+
+	db, err := repository.NewPostgresDB(conf.DB)
 	if err != nil {
 		logger.Fatalf("failed to initialize db: %s", err)
 	}
@@ -34,24 +34,19 @@ func main() {
 	reqRep := repository.NewReqPostgres(db)
 	downRep := repository.NewDownloadPostgres(db)
 
-	stor, err := storage.NewAwsStorage(os.Getenv("S3BUCKET"))
+	stor, err := storage.NewAwsStorage(conf.AwsBucketName, conf.AWS)
 	if err != nil {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
 
-	rabbitConfig := rabbitmq.Config{
-		User:     os.Getenv("RBUSER"),
-		Password: os.Getenv("RBPASSWORD"),
-		Host:     os.Getenv("RBHOST"),
-		Port:     os.Getenv("RBPORT"),
-	}
-
-	rabbitSender, err := rabbitmq.NewRabbitSender(rabbitConfig)
+	rabbitSender, err := rabbitmq.NewRabbitSender(conf.RabbitMQ)
 	if err != nil {
 		logger.Fatalf("failed to make connection to rabbitmq: %s", err)
 	}
 
-	authService := service.NewAuthSevice(authRep, &service.HashGen{}, &service.JwtGen{})
+	jwtGen := jwt.NewJwtGen(conf.JWT)
+
+	authService := service.NewAuthSevice(authRep, &service.HashGen{}, jwtGen)
 	reqService := service.NewRequestService(reqRep, stor, rabbitSender)
 	downService := service.NewDownloadService(downRep, stor)
 
@@ -61,12 +56,11 @@ func main() {
 
 	handlers := handler.New(authHandler, reqHandler, downHandler, logger)
 
-	port := os.Getenv("PORT")
 	srv := new(server.Server)
 
 	ctx := logging.WithLogger(context.Background(), logger)
 
-	if err := srv.Run(ctx, port, handlers.InitRouters()); err != nil {
+	if err := srv.Run(ctx, conf.Port, handlers.InitRouters(jwtGen)); err != nil {
 		logger.Fatalf("error occurred runnging http server: %s", err.Error())
 	}
 }

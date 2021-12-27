@@ -22,10 +22,8 @@ type AwsStorage struct {
 
 // Initialize AWS S3 storage using environment values.
 // Return error if any occurs while initializing session.
-func NewAwsStorage(bucketName string) (*AwsStorage, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("eu-central-1"),
-	})
+func NewAwsStorage(bucketName string, config *aws.Config) (*AwsStorage, error) {
+	sess, err := session.NewSession(config)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize session %w", err)
 	}
@@ -53,12 +51,12 @@ func (a *AwsStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
 	buf := aws.NewWriteAtBuffer(b)
 	n, err := a.downloader.Download(buf, downParams)
 
-	if n == 0 {
-		return nil, ErrReadIsEmpty
-	}
-
 	if err != nil {
 		return nil, fmt.Errorf("get file: %w", err)
+	}
+
+	if n == 0 {
+		return nil, ErrReadIsEmpty
 	}
 
 	return buf.Bytes(), nil
