@@ -5,7 +5,6 @@ import (
 	"errors"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/service"
@@ -29,7 +28,7 @@ var valToGetError = 256
 
 var errCreateToken = errors.New("create token error")
 
-func (g *genJwtMock) CreateToken(ctx context.Context, tokenTTL time.Duration, id int) (string, error) {
+func (g *genJwtMock) CreateToken(ctx context.Context, id int) (string, error) {
 	if id == valToGetError {
 		return "", errCreateToken
 	}

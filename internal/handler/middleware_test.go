@@ -34,16 +34,21 @@ func TestCheckJwt(t *testing.T) {
 		path         string
 		reqHeaderKey string
 		reqHeaderVal string
-		initHeader   func(*http.Request)
+		initHeader   func(*http.Request) *handler.JwtChecker
 		wantStatus   int
 		wantBody     string
 	}{
 		{
 			testName:     "ok",
 			reqHeaderKey: "Authorization",
-			initHeader: func(req *http.Request) {
-				token, _ := jwt.CreateToken(context.Background(), time.Hour, 12)
+			initHeader: func(req *http.Request) *handler.JwtChecker {
+				checker := &handler.JwtChecker{*jwt.NewJwtGen(&jwt.Config{
+					SignedKey: "key",
+					TTL:       4 * time.Hour,
+				})}
+				token, _ := checker.Gen.CreateToken(context.Background(), 12)
 				req.Header.Add("Authorization", "Bearer "+token)
+				return checker
 			},
 			reqHeaderVal: "Bearer",
 			wantStatus:   http.StatusOK,
@@ -51,35 +56,55 @@ func TestCheckJwt(t *testing.T) {
 		},
 		{
 			testName: "empty auth header",
-			initHeader: func(req *http.Request) {
+			initHeader: func(req *http.Request) *handler.JwtChecker {
+				checker := &handler.JwtChecker{*jwt.NewJwtGen(&jwt.Config{
+					SignedKey: "key",
+					TTL:       4 * time.Hour,
+				})}
+				return checker
 			},
 			wantStatus: http.StatusUnauthorized,
 			wantBody:   `{"message":"empty auth header"}`,
 		},
 		{
 			testName: "multiply auth headers",
-			initHeader: func(req *http.Request) {
-				token, _ := jwt.CreateToken(context.Background(), time.Hour, 12)
+			initHeader: func(req *http.Request) *handler.JwtChecker {
+				checker := &handler.JwtChecker{*jwt.NewJwtGen(&jwt.Config{
+					SignedKey: "key",
+					TTL:       4 * time.Hour,
+				})}
+				token, _ := checker.Gen.CreateToken(context.Background(), 12)
 				req.Header.Add("Authorization", "Bearer "+token)
 				req.Header.Add("Authorization", "Bearer "+token)
+				return checker
 			},
 			wantStatus: http.StatusUnauthorized,
 			wantBody:   `{"message":"more than one auth header"}`,
 		},
 		{
 			testName: "invalide auth method",
-			initHeader: func(req *http.Request) {
-				token, _ := jwt.CreateToken(context.Background(), time.Hour, 12)
+			initHeader: func(req *http.Request) *handler.JwtChecker {
+				checker := handler.JwtChecker{*jwt.NewJwtGen(&jwt.Config{
+					SignedKey: "key",
+					TTL:       4 * time.Hour,
+				})}
+				token, _ := checker.Gen.CreateToken(context.Background(), 12)
 				req.Header.Add("Authorization", "Invalide "+token)
+				return &checker
 			},
 			wantStatus: http.StatusUnauthorized,
 			wantBody:   `{"message":"invalid authentication method"}`,
 		},
 		{
 			testName: "invalide jwt token",
-			initHeader: func(req *http.Request) {
-				token, _ := jwt.CreateToken(context.Background(), time.Hour, 12)
+			initHeader: func(req *http.Request) *handler.JwtChecker {
+				checker := handler.JwtChecker{*jwt.NewJwtGen(&jwt.Config{
+					SignedKey: "key",
+					TTL:       4 * time.Hour,
+				})}
+				token, _ := checker.Gen.CreateToken(context.Background(), 12)
 				req.Header.Add("Authorization", "Bearer "+token+"to invalid")
+				return &checker
 			},
 			wantStatus: http.StatusUnauthorized,
 			wantBody:   `{"message":"middleware: parse token: illegal base64 data at input byte 45"}`,
@@ -91,12 +116,11 @@ func TestCheckJwt(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			tc.initHeader(req)
+			checker := tc.initHeader(req)
 
 			rr := httptest.NewRecorder()
 
-			handler.CheckJWT(&handMock).ServeHTTP(rr, req)
+			checker.CheckJWT(&handMock).ServeHTTP(rr, req)
 
 			if status := rr.Code; status != tc.wantStatus {
 				t.Errorf("want status %v, got status %v", tc.wantStatus, status)

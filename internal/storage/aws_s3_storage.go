@@ -20,12 +20,6 @@ type AwsStorage struct {
 	downloader *s3manager.Downloader
 }
 
-type AwsConfig struct {
-	AwsAccessKeyId    string
-	AwsSecretAcessKey string
-	Bucket            string
-}
-
 // Initialize AWS S3 storage using environment values.
 // Return error if any occurs while initializing session.
 func NewAwsStorage(bucketName string, config *aws.Config) (*AwsStorage, error) {

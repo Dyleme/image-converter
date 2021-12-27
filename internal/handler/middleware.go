@@ -19,7 +19,7 @@ const (
 )
 
 type JwtChecker struct {
-	gen jwt.JwtGen
+	Gen jwt.Gen
 }
 
 // checkJWT is not allow to acces to endpoints to unauthorized users.
@@ -51,7 +51,7 @@ func (ch *JwtChecker) CheckJWT(handler http.Handler) http.Handler {
 		authJWT := auth[len(BearerToken):]
 		authJWT = strings.TrimPrefix(authJWT, " ")
 
-		userID, err := ch.gen.ParseToken(ctx, authJWT)
+		userID, err := ch.Gen.ParseToken(ctx, authJWT)
 		if err != nil {
 			newErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("middleware: %w", err).Error())
 			return

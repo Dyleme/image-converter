@@ -8,6 +8,7 @@ import (
 
 	"github.com/Dyleme/image-coverter/internal/logging"
 	"github.com/Dyleme/image-coverter/internal/model"
+	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
@@ -49,13 +50,13 @@ func NewRabbitSender(c *Config) (*RabbitSender, error) {
 	conn, err := amqp.Dial(connStr)
 
 	if err != nil {
-		// logrus.Fatalf("unable to make connection to rabbitMQ: %v", err)
+		logrus.Fatalf("unable to make connection to rabbitMQ: %v", err)
 		return nil, fmt.Errorf("unable to make connection to rabbitMQ: %w", err)
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		// logrus.Fatalf("falied in open a channel: %v", err)
+		logrus.Fatalf("falied in open a channel: %v", err)
 		return nil, fmt.Errorf("falied in open a channel: %w", err)
 	}
 
@@ -66,7 +67,7 @@ func NewRabbitSender(c *Config) (*RabbitSender, error) {
 	)
 
 	if err != nil {
-		// logrus.Fatalf("falied in open a channel: %v", err)
+		logrus.Fatalf("falied in open a channel: %v", err)
 		return nil, fmt.Errorf("falied in open a channel: %w", err)
 	}
 

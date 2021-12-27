@@ -12,7 +12,7 @@ import (
 
 type Key string
 
-type JwtGen struct {
+type Gen struct {
 	signedKey string
 	ttl       time.Duration
 }
@@ -22,8 +22,8 @@ type Config struct {
 	TTL       time.Duration
 }
 
-func NewJwtGen(config *Config) *JwtGen {
-	return &JwtGen{signedKey: config.SignedKey}
+func NewJwtGen(config *Config) *Gen {
+	return &Gen{signedKey: config.SignedKey}
 }
 
 const (
@@ -48,7 +48,7 @@ type tokenClaims struct {
 }
 
 // CreateToken function generate token with provided TTL and user id.
-func (g *JwtGen) CreateToken(_ context.Context, id int) (string, error) {
+func (g *Gen) CreateToken(_ context.Context, id int) (string, error) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		jwt.StandardClaims{
 			IssuedAt:  time.Now().Unix(),
@@ -61,7 +61,7 @@ func (g *JwtGen) CreateToken(_ context.Context, id int) (string, error) {
 }
 
 // ParseToken function rerurns user id from JWT token, if this token is liquid.
-func (g *JwtGen) ParseToken(_ context.Context, tokenString string) (int, error) {
+func (g *Gen) ParseToken(_ context.Context, tokenString string) (int, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return 0, UnexpectedSingingMethodError{t.Header["alg"]}

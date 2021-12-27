@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -21,12 +20,12 @@ import (
 func main() {
 	logger := logging.NewLogger(logrus.InfoLevel)
 
-	config, err := config.InitConfig()
+	conf, err := config.InitConfig()
 	if err != nil {
 		logger.Fatalf("wrong config: %s", err)
 	}
 
-	db, err := repository.NewPostgresDB(config.DB)
+	db, err := repository.NewPostgresDB(conf.DB)
 	if err != nil {
 		logger.Fatalf("failed to initialize db: %s", err)
 	}
@@ -35,20 +34,17 @@ func main() {
 	reqRep := repository.NewReqPostgres(db)
 	downRep := repository.NewDownloadPostgres(db)
 
-	stor, err := storage.NewAwsStorage(config.AwsBucketName, config.AWS)
-	fmt.Println(config.AWS, config.AwsBucketName)
-	fmt.Println(config.AWS.Credentials)
+	stor, err := storage.NewAwsStorage(conf.AwsBucketName, conf.AWS)
 	if err != nil {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
 
-	rabbitSender, err := rabbitmq.NewRabbitSender(config.RabbitMQ)
+	rabbitSender, err := rabbitmq.NewRabbitSender(conf.RabbitMQ)
 	if err != nil {
-		// logger.Fatalf("failed to make connection to rabbitmq: %s", err)
-
+		logger.Fatalf("failed to make connection to rabbitmq: %s", err)
 	}
 
-	jwtGen := jwt.NewJwtGen(config.JWT)
+	jwtGen := jwt.NewJwtGen(conf.JWT)
 
 	authService := service.NewAuthSevice(authRep, &service.HashGen{}, jwtGen)
 	reqService := service.NewRequestService(reqRep, stor, rabbitSender)
@@ -64,7 +60,7 @@ func main() {
 
 	ctx := logging.WithLogger(context.Background(), logger)
 
-	if err := srv.Run(ctx, config.Port, handlers.InitRouters(jwtGen)); err != nil {
+	if err := srv.Run(ctx, conf.Port, handlers.InitRouters(jwtGen)); err != nil {
 		logger.Fatalf("error occurred runnging http server: %s", err.Error())
 	}
 }

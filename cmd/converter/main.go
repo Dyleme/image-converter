@@ -22,26 +22,26 @@ func (r *emptySender) ProcessImage(ctx context.Context, data *rabbitmq.Conversio
 func main() {
 	logger := logging.NewLogger(logrus.DebugLevel)
 
-	config, err := config.InitConfig()
+	conf, err := config.InitConfig()
 	if err != nil {
 		logger.Fatal("wrong config: %w", err)
 	}
 
 	ctx := logging.WithLogger(context.Background(), logger)
 
-	db, err := repository.NewPostgresDB(config.DB)
+	db, err := repository.NewPostgresDB(conf.DB)
 	if err != nil {
 		logger.Fatalf("failed to initialize db: %s", err)
 	}
 
 	reqRep := repository.NewReqPostgres(db)
 
-	stor, err := storage.NewAwsStorage(config.AwsBucketName, config.AWS)
+	stor, err := storage.NewAwsStorage(conf.AwsBucketName, conf.AWS)
 	if err != nil {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
 
 	reqService := service.NewRequestService(reqRep, stor, &emptySender{})
 
-	rabbitmq.Receive(ctx, reqService, config.RabbitMQ)
+	rabbitmq.Receive(ctx, reqService, conf.RabbitMQ)
 }

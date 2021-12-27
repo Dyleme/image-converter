@@ -30,7 +30,7 @@ func InitConfig() (*CollectiveConfig, error) {
 		SSLMode:  os.Getenv("DBSSLMODE"),
 	}
 
-	rabbit := &rabbitmq.Config{
+	rabbitConfig := &rabbitmq.Config{
 		User:     os.Getenv("RBUSER"),
 		Password: os.Getenv("RBPASSWORD"),
 		Host:     os.Getenv("RBHOST"),
@@ -42,7 +42,7 @@ func InitConfig() (*CollectiveConfig, error) {
 		return nil, err
 	}
 
-	jwt := &jwt.Config{
+	jwtConfig := &jwt.Config{
 		SignedKey: os.Getenv("SIGNEDKEY"),
 		TTL:       ttl,
 	}
@@ -61,11 +61,10 @@ func InitConfig() (*CollectiveConfig, error) {
 
 	return &CollectiveConfig{
 		DB:            db,
-		RabbitMQ:      rabbit,
-		JWT:           jwt,
+		RabbitMQ:      rabbitConfig,
+		JWT:           jwtConfig,
 		Port:          port,
 		AWS:           awsConfig,
 		AwsBucketName: awsBucketName,
 	}, nil
-
 }

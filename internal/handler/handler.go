@@ -42,12 +42,12 @@ type DownloadHandler interface {
 }
 
 // InitRouters() method is used to initialize all endopoints with the routers.
-func (h *Handler) InitRouters(jwtGen *jwt.JwtGen) *mux.Router {
+func (h *Handler) InitRouters(jwtGen *jwt.Gen) *mux.Router {
 	router := mux.NewRouter()
 	router.Use(h.logTime)
 
 	authRouter := router.NewRoute().Subrouter()
-	jwtChecker := JwtChecker{gen: *jwtGen}
+	jwtChecker := JwtChecker{Gen: *jwtGen}
 	authRouter.Use(jwtChecker.CheckJWT)
 
 	router.HandleFunc("/auth/register", h.authHandler.Register).Methods(http.MethodPost)
