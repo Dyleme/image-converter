@@ -176,18 +176,18 @@ func TestUpdateRequestStatus(t *testing.T) {
 		wantErr  error
 	}{
 		{
-			testName: "all is good",
-			reqID:    12,
-			status:   "done",
-			repoID:   23,
-			wantErr:  nil,
-		},
-		{
 			testName: "such row not present in database",
 			reqID:    12,
 			status:   "done",
 			repoID:   0,
 			wantErr:  sql.ErrNoRows,
+		},
+		{
+			testName: "all is good",
+			reqID:    12,
+			status:   "done",
+			repoID:   23,
+			wantErr:  nil,
 		},
 	}
 
