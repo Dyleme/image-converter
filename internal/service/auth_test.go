@@ -10,6 +10,7 @@ import (
 	"github.com/Dyleme/image-coverter/internal/service"
 	"github.com/Dyleme/image-coverter/internal/service/mocks"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 type genHashMock struct{}
@@ -85,13 +86,8 @@ func TestCreateUser(t *testing.T) {
 
 			gotID, gotErr := srvc.CreateUser(ctx, tc.user)
 
-			if !errors.Is(gotErr, tc.wantError) {
-				t.Errorf("want error %b, got errror %v", tc.wantError, gotErr)
-			}
-
-			if gotID != tc.wantID {
-				t.Errorf("want id %v, got id %v", tc.wantID, gotID)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantError)
+			assert.Equal(t, gotID, tc.wantID)
 		})
 	}
 }
@@ -173,13 +169,8 @@ func TestValidateUser(t *testing.T) {
 
 			gotJwt, gotErr := srvc.ValidateUser(ctx, tc.user)
 
-			if !errors.Is(gotErr, tc.wantError) {
-				t.Errorf("want error %v, got error %v", tc.wantError, gotErr)
-			}
-
-			if gotJwt != tc.wantJwt {
-				t.Errorf("want jwt %v, got jwt %v", tc.wantJwt, gotJwt)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantError)
+			assert.Equal(t, gotJwt, tc.wantJwt)
 		})
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/Dyleme/image-coverter/internal/handler/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 var errInvalidUser = errors.New("invalid user")
@@ -103,13 +104,8 @@ func TestAuthHandler_Login(t *testing.T) {
 
 			authHandler.Login(rr, req)
 
-			if status := rr.Code; status != tc.wantStatus {
-				t.Errorf("want status %v, got status %v", tc.wantStatus, status)
-			}
-
-			if body := rr.Body.String(); body != tc.wantBody {
-				t.Errorf("want body %s, got body %s", tc.wantBody, body)
-			}
+			assert.Equal(t, rr.Code, tc.wantStatus)
+			assert.Equal(t, rr.Body.String(), tc.wantBody)
 		})
 	}
 }
@@ -207,13 +203,8 @@ func TestAuthHandler_Register(t *testing.T) {
 
 			authHandler.Register(rr, req)
 
-			if status := rr.Code; status != tc.wantStatus {
-				t.Errorf("want status %v, got status %v", tc.wantStatus, status)
-			}
-
-			if body := rr.Body.String(); body != tc.wantBody {
-				t.Errorf("want body %s, got body %s", tc.wantBody, body)
-			}
+			assert.Equal(t, rr.Code, tc.wantStatus)
+			assert.Equal(t, rr.Body.String(), tc.wantBody)
 		})
 	}
 }

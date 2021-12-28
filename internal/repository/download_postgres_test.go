@@ -3,12 +3,12 @@ package repository_test
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Dyleme/image-coverter/internal/repository"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetImageUrl(t *testing.T) {
@@ -58,13 +58,8 @@ func TestGetImageUrl(t *testing.T) {
 
 			gotURL, gotErr := repo.GetImageURL(context.Background(), tc.userID, tc.imageID)
 
-			if !errors.Is(gotErr, tc.wantErr) {
-				t.Errorf("Want error : %v, got error: %v", tc.wantErr, gotErr)
-			}
-
-			if gotURL != tc.wantURL {
-				t.Errorf("Want url : %v, got url: %v", tc.wantURL, gotURL)
-			}
+			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.Equal(t, gotURL, tc.wantURL)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)
