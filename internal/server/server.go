@@ -60,7 +60,7 @@ func (s *Server) serve(ctx context.Context, port string, handler http.Handler) e
 
 	go func() {
 		if err := s.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			servError <- fmt.Errorf("listen: %s", err)
+			servError <- fmt.Errorf("listen: %w", err)
 		}
 	}()
 
@@ -73,7 +73,9 @@ func (s *Server) serve(ctx context.Context, port string, handler http.Handler) e
 
 	case <-ctx.Done():
 		logger.Info("server end")
+
 		ctxShutDown, cancel := context.WithTimeout(context.Background(), timeForGracefulShutdown)
+
 		defer cancel()
 
 		if err := s.httpServer.Shutdown(ctxShutDown); err != nil {
