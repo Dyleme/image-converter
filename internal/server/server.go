@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -41,12 +42,10 @@ func (s *Server) Run(ctx context.Context, port string, handler http.Handler) err
 		cancel()
 	}()
 
-	s.serve(ctx, port, handler)
-
-	return nil
+	return s.serve(ctx, port, handler)
 }
 
-func (s *Server) serve(ctx context.Context, port string, handler http.Handler) {
+func (s *Server) serve(ctx context.Context, port string, handler http.Handler) error {
 	s.httpServer = &http.Server{
 		Addr:           ":" + port,
 		Handler:        handler,
@@ -57,25 +56,33 @@ func (s *Server) serve(ctx context.Context, port string, handler http.Handler) {
 
 	logger := logging.FromContext(ctx)
 
+	servError := make(chan error, 1)
+
 	go func() {
 		if err := s.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Fatalf("listen: %s", err)
+			servError <- fmt.Errorf("listen: %s", err)
 		}
 	}()
 
 	logger.Info("server start")
 
-	<-ctx.Done()
+	select {
+	case err := <-servError:
+		logger.Error("server crushed: ", err)
+		return err
 
-	logger.Info("server end")
+	case <-ctx.Done():
+		logger.Info("server end")
+		ctxShutDown, cancel := context.WithTimeout(context.Background(), timeForGracefulShutdown)
+		defer cancel()
 
-	ctxShutDown, cancel := context.WithTimeout(context.Background(), timeForGracefulShutdown)
-	defer cancel()
+		if err := s.httpServer.Shutdown(ctxShutDown); err != nil {
+			logger.Error("server didn't exit properly")
+			return err
+		}
 
-	if err := s.httpServer.Shutdown(ctxShutDown); err != nil {
-		logger.Fatalf("server shutdown failed %s", err)
-		return
+		logger.Info("server exited properly")
 	}
 
-	logger.Info("server exited properly")
+	return nil
 }
