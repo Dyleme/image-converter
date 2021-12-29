@@ -163,8 +163,6 @@ func Receive(ctx context.Context, conv Converter, conf *Config) error {
 		return fmt.Errorf("failed to register a consumer: %w", err)
 	}
 
-	forever := make(chan bool)
-
 	logger.Info("start conversion server")
 
 	go func() {
@@ -190,7 +188,7 @@ func Receive(ctx context.Context, conv Converter, conf *Config) error {
 		}
 	}()
 
-	<-forever
+	<-ctx.Done()
 
 	return nil
 }

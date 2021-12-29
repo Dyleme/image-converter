@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
 
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -37,6 +39,18 @@ func main() {
 	}
 
 	convService := service.NewConvertRequest(convRep, stor)
+
+	c := make(chan os.Signal, 1)
+
+	signal.Notify(c, os.Interrupt)
+
+	ctx, cancel := context.WithCancel(ctx)
+
+	go func() {
+		<-c
+		logger.Info("system interrupt call")
+		cancel()
+	}()
 
 	err = rabbitmq.Receive(ctx, convService, conf.RabbitMQ)
 	if err != nil {
