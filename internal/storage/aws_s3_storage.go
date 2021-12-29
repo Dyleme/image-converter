@@ -39,9 +39,6 @@ var ErrReadIsEmpty = errors.New("read empty file")
 // GetFile is used to get file from S3 storage.
 // Returns an error, any occurs.
 func (a *AwsStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
-	logger := logging.FromContext(ctx)
-	logger.Infof("getting file %v", path)
-
 	downParams := &s3.GetObjectInput{
 		Bucket: aws.String(a.bucketName),
 		Key:    aws.String(path),

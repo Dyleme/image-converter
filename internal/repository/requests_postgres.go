@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/Dyleme/image-coverter/internal/model"
 )
@@ -108,52 +107,12 @@ func (r *ReqPostgres) AddRequest(ctx context.Context, req *model.Request, userID
 	return reqID, nil
 }
 
-// UpdateRequestStatus method update status of an existing request in database.
-func (r *ReqPostgres) UpdateRequestStatus(ctx context.Context, reqID int, status string) error {
-	query := fmt.Sprintf(`UPDATE %s SET op_status = $1 WHERE id = $2 RETURNING id`, RequestTable)
-	row := r.db.QueryRowContext(ctx, query, status, reqID)
-
-	var id int
-	if err := row.Scan(&id); err != nil {
-		return fmt.Errorf("repo: %w", err)
-	}
-
-	return nil
-}
-
-// AddProcessedImageIDToRequest method update processed image id column for the reqId.
-func (r *ReqPostgres) AddProcessedImageIDToRequest(ctx context.Context, reqID, imageID int) error {
-	query := fmt.Sprintf(`UPDATE %s SET processed_id = $1 WHERE id = $2 RETURNING id;`, RequestTable)
-	row := r.db.QueryRowContext(ctx, query, imageID, reqID)
-
-	var id int
-	if err := row.Scan(&id); err != nil {
-		return fmt.Errorf("repo: %w", err)
-	}
-
-	return nil
-}
-
-// AddProcessedImageIDToRequest method update processed time column for the reqId.
-func (r *ReqPostgres) AddProcessedTimeToRequest(ctx context.Context, reqID int, t time.Time) error {
-	query := fmt.Sprintf(`UPDATE %s SET completion_time = $1 WHERE id = $2 RETURNING id;`, RequestTable)
-	row := r.db.QueryRowContext(ctx, query, t, reqID)
-
-	var id int
-	if err := row.Scan(&id); err != nil {
-		return fmt.Errorf("repo: %w", err)
-	}
-
-	return nil
-}
-
 // AddImage method add image to the postgres database.
 // Returns id of this image.
-func (r *ReqPostgres) AddImage(ctx context.Context, userID int, imageInfo model.Info) (int, error) {
-	query := fmt.Sprintf(`INSERT INTO %s (resoolution_x, resoolution_y, im_type, image_url, user_id)
-		VALUES ($1, $2, $3, $4, $5) RETURNING id;`, ImageTable)
-	row := r.db.QueryRowContext(ctx, query, imageInfo.Width, imageInfo.Height,
-		imageInfo.Type, imageInfo.URL, userID)
+func (r *ReqPostgres) AddImage(ctx context.Context, userID int, imageInfo model.ReuquestImageInfo) (int, error) {
+	query := fmt.Sprintf(`INSERT INTO %s (im_type, image_url, user_id)
+		VALUES ($1, $2, $3) RETURNING id;`, ImageTable)
+	row := r.db.QueryRowContext(ctx, query, imageInfo.Type, imageInfo.URL, userID)
 
 	var imageID int
 
