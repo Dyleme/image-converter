@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	rabbitmq "github.com/Dyleme/image-coverter/internal/rabbitmq"
+	model "github.com/Dyleme/image-coverter/internal/model"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -36,7 +36,7 @@ func (m *MockImageProcesser) EXPECT() *MockImageProcesserMockRecorder {
 }
 
 // ProcessImage mocks base method.
-func (m *MockImageProcesser) ProcessImage(arg0 context.Context, arg1 *rabbitmq.ConversionData) {
+func (m *MockImageProcesser) ProcessImage(arg0 context.Context, arg1 *model.ConverstionedImage) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ProcessImage", arg0, arg1)
 }

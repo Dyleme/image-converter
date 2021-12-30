@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"image"
+	"time"
 
 	"github.com/Dyleme/image-coverter/internal/logging"
 	"github.com/Dyleme/image-coverter/internal/model"
-	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
@@ -30,18 +29,6 @@ type Config struct {
 // Name of the queue, which is used to communicate with the RabbitMQ.
 var queueName = "convert"
 
-// ConversionData is struct, which contains images and all needed
-// information to convert images.
-type ConversionData struct {
-	Ctx       context.Context
-	ImageInfo model.ConversionInfo `json:"imageInfo"`
-	UserID    int                  `json:"userID"`
-	ReqID     int                  `json:"reqID"`
-	OldType   string               `json:"oldType"`
-	Pic       []byte               `json:"pic"`
-	FileName  string               `json:"fileName"`
-}
-
 // NewRabbitSender returns *RabbitSender, which is ready to send messages.
 // NewRabbitSender at first initialize connection with RabbitMQ server,
 // than it initialize channel with broker.
@@ -50,13 +37,11 @@ func NewRabbitSender(c *Config) (*RabbitSender, error) {
 	conn, err := amqp.Dial(connStr)
 
 	if err != nil {
-		logrus.Fatalf("unable to make connection to rabbitMQ: %v", err)
 		return nil, fmt.Errorf("unable to make connection to rabbitMQ: %w", err)
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		logrus.Fatalf("falied in open a channel: %v", err)
 		return nil, fmt.Errorf("falied in open a channel: %w", err)
 	}
 
@@ -67,7 +52,6 @@ func NewRabbitSender(c *Config) (*RabbitSender, error) {
 	)
 
 	if err != nil {
-		logrus.Fatalf("falied in open a channel: %v", err)
 		return nil, fmt.Errorf("falied in open a channel: %w", err)
 	}
 
@@ -75,7 +59,7 @@ func NewRabbitSender(c *Config) (*RabbitSender, error) {
 }
 
 // This function is used to send images and data to convert it, to the message broker.
-func (r *RabbitSender) ProcessImage(ctx context.Context, data *ConversionData) {
+func (r *RabbitSender) ProcessImage(ctx context.Context, data *model.ConverstionedImage) {
 	r.SendJSON(ctx, data)
 }
 
@@ -95,12 +79,14 @@ func (r *RabbitSender) SendJSON(ctx context.Context, data interface{}) {
 	)
 
 	if err != nil {
-		logger.Fatalf("unable to make a queue: %v", err)
+		logger.Errorf("send json: unable to make a queue: %v", err)
+		return
 	}
 
 	jsn, err := json.Marshal(data)
 	if err != nil {
-		logger.Errorf("rabbitmq: %v", err)
+		logger.Errorf("send json: %v", err)
+		return
 	}
 
 	err = r.ch.Publish(
@@ -115,31 +101,70 @@ func (r *RabbitSender) SendJSON(ctx context.Context, data interface{}) {
 		})
 
 	if err != nil {
-		logger.Fatal("uanble to publish message")
+		logger.Errorf("send json: uanble to publish message")
+		return
 	}
 }
 
 // Converter is an interface which provide functions to convert images.
 type Converter interface {
-	Convert(ctx context.Context, data *ConversionData) image.Image
-	ProcessResizedImage(ctx context.Context, im image.Image, data *ConversionData)
+	Convert(ctx context.Context, reqID int, filename string) error
 }
 
 // Receive is method which is used to get messages from RabbitMQ and then convert images.
 // At first this function initialize connection, channel and queue to with RabbitMQ.
 // Then it in infinite loop get messages from queue, convert image and process it.
-func Receive(ctx context.Context, conv Converter, conf *Config) {
+func Receive(ctx context.Context, conv Converter, conf *Config) error {
 	logger := logging.FromContext(ctx)
 	connStr := fmt.Sprintf("amqps://%s:%s@%s:%s/", conf.User, conf.Password, conf.Host, conf.Port)
-	conn, err := amqp.Dial(connStr)
 
+	conn, err := amqp.Dial(connStr)
 	if err != nil {
-		logger.Fatalf("unable to make connection to rabbitMQ: %v", err)
+		return fmt.Errorf("can not connect to broker")
 	}
 
+	msgs, err := createConnectionAndQueue(conn)
+	if err != nil {
+		return fmt.Errorf("unable to make connection to rabbitMQ: %w", err)
+	}
+
+	logger.Info("start conversion server")
+
+loop:
+	for {
+		select {
+		case d := <-msgs:
+			logger.Debug("get conversion reqeust")
+
+			var data model.ConverstionedImage
+			err := json.Unmarshal(d.Body, &data)
+
+			if err != nil {
+				logger.Warn("Umarshaling error")
+			}
+
+			convBegin := time.Now()
+
+			err = conv.Convert(logging.WithLogger(context.TODO(), logger), data.ReqID, data.FileName)
+			if err != nil {
+				logger.Warnf("receive: %s", err)
+			}
+
+			logger.WithField("time for conversion", time.Since(convBegin)).
+				Debug("conversion ends")
+
+		case <-ctx.Done():
+			break loop
+		}
+	}
+
+	return nil
+}
+
+func createConnectionAndQueue(conn *amqp.Connection) (<-chan amqp.Delivery, error) {
 	ch, err := conn.Channel()
 	if err != nil {
-		logger.Fatalf("falied in open a channel: %v", err)
+		return nil, fmt.Errorf("falied in open a channel: %w", err)
 	}
 
 	err = ch.Qos(
@@ -148,7 +173,7 @@ func Receive(ctx context.Context, conv Converter, conf *Config) {
 		false, // global
 	)
 	if err != nil {
-		logger.Fatalf("falied in open a channel: %v", err)
+		return nil, fmt.Errorf("falied in open a channel: %w", err)
 	}
 
 	q, err := ch.QueueDeclare(
@@ -160,7 +185,7 @@ func Receive(ctx context.Context, conv Converter, conf *Config) {
 		nil,   // arguments
 	)
 	if err != nil {
-		logger.Fatalf("failed to declare a queue: %v", err)
+		return nil, fmt.Errorf("failed to declare a queue: %w", err)
 	}
 
 	msgs, err := ch.Consume(
@@ -173,29 +198,8 @@ func Receive(ctx context.Context, conv Converter, conf *Config) {
 		nil,    // args
 	)
 	if err != nil {
-		logger.Fatalf("failed to register a consumer: %v", err)
+		return nil, fmt.Errorf("failed to register a consumer: %w", err)
 	}
 
-	forever := make(chan bool)
-
-	logger.Info("start conversion server")
-
-	go func() {
-		for d := range msgs {
-			logger.Println("get conversion reqeust")
-
-			var data ConversionData
-			err := json.Unmarshal(d.Body, &data)
-
-			if err != nil {
-				logger.Print("Umarshaling error")
-			}
-
-			im := conv.Convert(ctx, &data)
-			conv.ProcessResizedImage(ctx, im, &data)
-			logger.Println("conversion request is handled")
-		}
-	}()
-
-	<-forever
+	return msgs, nil
 }

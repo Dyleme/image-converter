@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
 
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -13,11 +15,6 @@ import (
 	"github.com/Dyleme/image-coverter/internal/service"
 	"github.com/Dyleme/image-coverter/internal/storage"
 )
-
-type emptySender struct{}
-
-func (r *emptySender) ProcessImage(ctx context.Context, data *rabbitmq.ConversionData) {
-}
 
 func main() {
 	logger := logging.NewLogger(logrus.DebugLevel)
@@ -34,14 +31,29 @@ func main() {
 		logger.Fatalf("failed to initialize db: %s", err)
 	}
 
-	reqRep := repository.NewReqPostgres(db)
+	convRep := repository.NewConvPostgres(db)
 
 	stor, err := storage.NewAwsStorage(conf.AwsBucketName, conf.AWS)
 	if err != nil {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
 
-	reqService := service.NewRequest(reqRep, stor, &emptySender{})
+	convService := service.NewConvertRequest(convRep, stor)
 
-	rabbitmq.Receive(ctx, reqService, conf.RabbitMQ)
+	c := make(chan os.Signal, 1)
+
+	signal.Notify(c, os.Interrupt)
+
+	ctx, cancel := context.WithCancel(ctx)
+
+	go func() {
+		<-c
+		logger.Info("system interrupt call")
+		cancel()
+	}()
+
+	err = rabbitmq.Receive(ctx, convService, conf.RabbitMQ)
+	if err != nil {
+		logger.Fatalf("receiving: %s", err)
+	}
 }

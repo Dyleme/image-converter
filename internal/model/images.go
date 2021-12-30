@@ -10,9 +10,23 @@ type ConversionInfo struct {
 }
 
 // Information about image.
-type Info struct {
-	Width  int
-	Height int
-	Type   string
-	URL    string
+type ReuquestImageInfo struct {
+	Type string
+	URL  string
+}
+
+type ConvImageInfo struct {
+	UserID  int
+	OldImID int
+	OldURL  string
+	OldType string
+	NewType string
+	Ratio   float32
+}
+
+// ConverstionedImage is struct, which contains images and all needed
+// information to convert images.
+type ConverstionedImage struct {
+	ReqID    int    `json:"reqID"`
+	FileName string `json:"fileName"`
 }

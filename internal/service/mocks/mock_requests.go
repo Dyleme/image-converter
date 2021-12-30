@@ -37,7 +37,7 @@ func (m *MockRequester) EXPECT() *MockRequesterMockRecorder {
 }
 
 // AddImage mocks base method.
-func (m *MockRequester) AddImage(arg0 context.Context, arg1 int, arg2 model.Info) (int, error) {
+func (m *MockRequester) AddImage(arg0 context.Context, arg1 int, arg2 model.ReuquestImageInfo) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddImage", arg0, arg1, arg2)
 	ret0, _ := ret[0].(int)

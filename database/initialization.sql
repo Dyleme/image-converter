@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS requests (
 
 CREATE TABLE IF NOT EXISTS images (
   id               SERIAL UNIQUE PRIMARY KEY,
-  resoolution_x    INTEGER NOT NULL,
-  resoolution_y    INTEGER NOT NULL,
+  resoolution_x    INTEGER,
+  resoolution_y    INTEGER,
   im_type          image_type NOT NULL,
   image_url        VARCHAR(250) NOT NULL,
   user_id          INTEGER NOT NULL,

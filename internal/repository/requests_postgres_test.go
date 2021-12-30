@@ -167,146 +167,11 @@ func TestAddRequest(t *testing.T) {
 	}
 }
 
-func TestUpdateRequestStatus(t *testing.T) {
-	testCases := []struct {
-		testName string
-		reqID    int
-		status   string
-		repoID   int
-		wantErr  error
-	}{
-		{
-			testName: "such row not present in database",
-			reqID:    12,
-			status:   "done",
-			repoID:   0,
-			wantErr:  sql.ErrNoRows,
-		},
-		{
-			testName: "all is good",
-			reqID:    12,
-			status:   "done",
-			repoID:   23,
-			wantErr:  nil,
-		},
-	}
-
-	query := fmt.Sprintf(`UPDATE %s SET op_status = .+ WHERE id = .+ RETURNING id`, repository.RequestTable)
-
-	for _, tc := range testCases {
-		t.Run(tc.testName, func(t *testing.T) {
-			repo, mock := NewReqMock(t)
-
-			rows := RepoReturnID(repo, tc.repoID)
-
-			mock.ExpectQuery(query).WithArgs(tc.status, tc.reqID).WillReturnRows(rows)
-
-			gotErr := repo.UpdateRequestStatus(context.Background(), tc.reqID, tc.status)
-
-			assert.ErrorIs(t, gotErr, tc.wantErr)
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were fulfilled expectations: %s", err)
-			}
-		})
-	}
-}
-
-func TestAddProcessedImageIDToRequest(t *testing.T) {
-	testCases := []struct {
-		testName string
-		reqID    int
-		imageID  int
-		repoID   int
-		wantErr  error
-	}{
-		{
-			testName: "all is good",
-			reqID:    521,
-			imageID:  13,
-			repoID:   23,
-			wantErr:  nil,
-		},
-		{
-			testName: "such row not present in database",
-			reqID:    932,
-			imageID:  13,
-			repoID:   0,
-			wantErr:  sql.ErrNoRows,
-		},
-	}
-
-	query := fmt.Sprintf(`UPDATE %s SET processed_id = .+ WHERE id = .+ RETURNING id;`, repository.RequestTable)
-
-	for _, tc := range testCases {
-		t.Run(tc.testName, func(t *testing.T) {
-			repo, mock := NewReqMock(t)
-
-			rows := RepoReturnID(repo, tc.repoID)
-
-			mock.ExpectQuery(query).WithArgs(tc.imageID, tc.reqID).WillReturnRows(rows)
-
-			gotErr := repo.AddProcessedImageIDToRequest(context.Background(), tc.reqID, tc.imageID)
-
-			assert.ErrorIs(t, gotErr, tc.wantErr)
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were fulfilled expectations: %s", err)
-			}
-		})
-	}
-}
-
-func TestAddProcessedTimeToRequest(t *testing.T) {
-	testCases := []struct {
-		testName string
-		reqID    int
-		procTime time.Time
-		repoID   int
-		wantErr  error
-	}{
-		{
-			testName: "all is good",
-			reqID:    12,
-			procTime: time.Date(2012, 3, 12, 3, 23, 3, 4, time.Local),
-			repoID:   23,
-			wantErr:  nil,
-		},
-		{
-			testName: "such row not present in database",
-			reqID:    12,
-			procTime: time.Date(2012, 3, 12, 3, 23, 3, 4, time.Local),
-			repoID:   0,
-			wantErr:  sql.ErrNoRows,
-		},
-	}
-
-	query := fmt.Sprintf(`UPDATE %s SET completion_time = .+ WHERE id = .+ RETURNING id;`, repository.RequestTable)
-
-	for _, tc := range testCases {
-		t.Run(tc.testName, func(t *testing.T) {
-			repo, mock := NewReqMock(t)
-
-			rows := RepoReturnID(repo, tc.repoID)
-
-			mock.ExpectQuery(query).WithArgs(tc.procTime, tc.reqID).WillReturnRows(rows)
-
-			gotErr := repo.AddProcessedTimeToRequest(context.Background(), tc.reqID, tc.procTime)
-
-			assert.ErrorIs(t, gotErr, tc.wantErr)
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were fulfilled expectations: %s", err)
-			}
-		})
-	}
-}
-
 func TestAddImage(t *testing.T) {
 	testCases := []struct {
 		testName  string
 		userID    int
-		imageInfo *model.Info
+		imageInfo *model.ReuquestImageInfo
 		repoID    int
 		wantID    int
 		wantErr   error
@@ -314,11 +179,9 @@ func TestAddImage(t *testing.T) {
 		{
 			testName: "all is good",
 			userID:   12,
-			imageInfo: &model.Info{
-				Width:  2040,
-				Height: 1020,
-				Type:   "png",
-				URL:    "url to image",
+			imageInfo: &model.ReuquestImageInfo{
+				Type: "png",
+				URL:  "url to image",
 			},
 			repoID:  23,
 			wantID:  23,
@@ -326,8 +189,8 @@ func TestAddImage(t *testing.T) {
 		},
 	}
 
-	query := fmt.Sprintf(`INSERT INTO %s \(resoolution_x, resoolution_y, im_type, image_url, user_id\)
-		VALUES (.+, .+, .+, .+, .+) RETURNING id;`, repository.ImageTable)
+	query := fmt.Sprintf(`INSERT INTO %s \(im_type, image_url, user_id\)
+		VALUES (.+, .+, .+) RETURNING id;`, repository.ImageTable)
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
@@ -335,8 +198,7 @@ func TestAddImage(t *testing.T) {
 
 			rows := RepoReturnID(repo, tc.repoID)
 
-			mock.ExpectQuery(query).WithArgs(tc.imageInfo.Width, tc.imageInfo.Height,
-				tc.imageInfo.Type, tc.imageInfo.URL, tc.userID).WillReturnRows(rows)
+			mock.ExpectQuery(query).WithArgs(tc.imageInfo.Type, tc.imageInfo.URL, tc.userID).WillReturnRows(rows)
 
 			gotID, gotErr := repo.AddImage(context.Background(), tc.userID, *tc.imageInfo)
 
