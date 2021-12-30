@@ -20,7 +20,7 @@ type NoPointInFilenameError struct {
 	Filename string
 }
 
-func (e *NoPointInFilenameError) Error() string {
+func (e NoPointInFilenameError) Error() string {
 	return fmt.Sprintf("no point in filename: %s", e.Filename)
 }
 
