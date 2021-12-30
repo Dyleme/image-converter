@@ -244,7 +244,7 @@ func TestAddReqeust(t *testing.T) {
 			reqRepoErr: nil,
 			repoReqID:  15,
 			wantReqID:  0,
-			wantErr:    service.ErrUnsupportedType,
+			wantErr:    &service.UnsupportedTypeError{"webm"},
 		},
 		{
 			testName: "storage error",

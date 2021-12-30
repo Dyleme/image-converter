@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -11,17 +10,6 @@ import (
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/repository"
 )
-
-const (
-	jpegType = "jpeg"
-	pngType  = "png"
-)
-
-const (
-	jpegQuality = 100
-)
-
-var ErrUnsupportedType = errors.New("unsopported type")
 
 // RequestRepo is an interface which provides methods to implement with the reposistory.
 type RequestRepo interface {
@@ -96,7 +84,7 @@ func (s *Request) AddRequest(ctx context.Context, userID int, file io.Reader,
 
 	oldType := fileName[pointIndex+1:]
 	if oldType != jpegType && oldType != pngType {
-		return 0, fmt.Errorf("add request: %w", ErrUnsupportedType)
+		return 0, fmt.Errorf("add request: %w", UnsupportedTypeError{oldType})
 	}
 
 	fileData, err := io.ReadAll(file)
