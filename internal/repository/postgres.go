@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -29,6 +30,10 @@ type DBConfig struct {
 	SSLMode  string
 }
 
+type TxDB struct {
+	*sql.DB
+}
+
 // Constuctor to the postgres database.
 func NewPostgresDB(conf *DBConfig) (*sql.DB, error) {
 	var db *sql.DB
@@ -47,4 +52,39 @@ func NewPostgresDB(conf *DBConfig) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func oneRowInResult(result sql.Result) error {
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("repo: %w", err)
+	}
+
+	if rows != 1 {
+		return fmt.Errorf("repo: %w", &NotSingleRowAffectedError{int(rows)})
+	}
+
+	return nil
+}
+
+func (db *TxDB) inTx(ctx context.Context, fn func(tx *sql.Tx) error) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	if err := fn(tx); err != nil {
+		if err1 := tx.Rollback(); err1 != nil {
+			return fmt.Errorf("rolling back transaction %v, (original error %v)",
+				err1, err) //nolint:errorlint // making combined error
+		}
+
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return nil
 }

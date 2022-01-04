@@ -97,7 +97,7 @@ func TestGetRequests(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			mockCtr := gomock.NewController(t)
 			defer mockCtr.Finish()
-			mockRequest := mocks.NewMockRequester(mockCtr)
+			mockRequest := mocks.NewMockRequestRepo(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
 			srvc := service.NewRequest(mockRequest, mockStorage, mocks.NewMockImageProcesser(mockCtr))
@@ -165,7 +165,7 @@ func TestGetRequest(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			mockCtr := gomock.NewController(t)
 			defer mockCtr.Finish()
-			mockRequest := mocks.NewMockRequester(mockCtr)
+			mockRequest := mocks.NewMockRequestRepo(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
 			srvc := service.NewRequest(mockRequest, mockStorage, &mocks.MockImageProcesser{})
@@ -267,7 +267,7 @@ func TestAddReqeust(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			mockCtr := gomock.NewController(t)
 			defer mockCtr.Finish()
-			mockRequest := mocks.NewMockRequester(mockCtr)
+			mockRequest := mocks.NewMockRequestRepo(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 			mockProcess := mocks.NewMockImageProcesser(mockCtr)
 
@@ -279,12 +279,11 @@ func TestAddReqeust(t *testing.T) {
 			}
 
 			if tc.runAddImage {
-				mockRequest.EXPECT().AddImage(ctx, tc.userID, gomock.Any()).Return(tc.imageID, tc.imageRepoErr)
+				mockRequest.EXPECT().
+					AddImageAndRequest(ctx, tc.userID, gomock.Any(), gomock.Any()).
+					Return(tc.repoReqID, tc.imageRepoErr)
 			}
 
-			if tc.runAddRequest {
-				mockRequest.EXPECT().AddRequest(ctx, gomock.Any(), tc.userID).Return(tc.repoReqID, tc.reqRepoErr)
-			}
 			if tc.runProcessImage {
 				mockProcess.EXPECT().ProcessImage(ctx, gomock.Any())
 			}
@@ -300,151 +299,87 @@ func TestAddReqeust(t *testing.T) {
 
 func TestDeleteReqeust(t *testing.T) {
 	testCases := []struct {
-		testName        string
-		userID          int
-		reqID           int
-		repo1ID         int
-		repo2ID         int
-		deleteReqErr    error
-		runDeleteImage1 bool
-		url1            string
-		deleteIm1RepErr error
-		runDeleteImage2 bool
-		url2            string
-		deleteIm2RepErr error
-		runDeleteFile1  bool
-		deleteFile1Err  error
-		runDeleteFile2  bool
-		deleteFile2Err  error
-		wantErr         error
+		testName string
+		userID   int
+		reqID    int
+		url1     string
+		url2     string
+		initMock func(*mocks.MockRequestRepo, *mocks.MockStorager, int, int, string, string)
+		wantErr  error
 	}{
 		{
-			testName:        "all is good",
-			userID:          1,
-			reqID:           2,
-			repo1ID:         3,
-			repo2ID:         4,
-			deleteReqErr:    nil,
-			runDeleteImage1: true,
-			url1:            "first image url",
-			deleteIm1RepErr: nil,
-			runDeleteImage2: true,
-			url2:            "second image url",
-			deleteIm2RepErr: nil,
-			runDeleteFile1:  true,
-			deleteFile1Err:  nil,
-			runDeleteFile2:  true,
-			deleteFile2Err:  nil,
-			wantErr:         nil,
+			testName: "all is good",
+			userID:   1,
+			reqID:    2,
+			url1:     "first image url",
+			url2:     "second image url",
+			initMock: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
+				mRep.EXPECT().DeleteRequestAndImage(gomock.Any(), userID, reqID).Return(url1, url2, nil)
+				mStor.EXPECT().DeleteFile(gomock.Any(), url1).Return(nil)
+				mStor.EXPECT().DeleteFile(gomock.Any(), url2).Return(nil)
+			},
+			wantErr: nil,
 		},
 		{
-			testName:        "error while deleting request",
-			userID:          1,
-			reqID:           2,
-			repo1ID:         0,
-			repo2ID:         0,
-			deleteReqErr:    errRepository,
-			runDeleteImage1: false,
-			runDeleteImage2: false,
-			runDeleteFile1:  false,
-			runDeleteFile2:  false,
-			wantErr:         errRepository,
+			testName: "error while deleting request and images",
+			userID:   1,
+			reqID:    2,
+			url1:     "",
+			url2:     "",
+			initMock: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
+				mRep.EXPECT().DeleteRequestAndImage(gomock.Any(), userID, reqID).Return(url1, url2, errRepository)
+			},
+			wantErr: errRepository,
 		},
 		{
-			testName:        "error while deleting first image",
-			userID:          1,
-			reqID:           2,
-			repo1ID:         3,
-			repo2ID:         4,
-			deleteReqErr:    nil,
-			runDeleteImage1: true,
-			deleteIm1RepErr: errRepository,
-			runDeleteImage2: false,
-			runDeleteFile1:  false,
-			runDeleteFile2:  false,
-			wantErr:         errRepository,
+			testName: "error while deleting first file",
+			userID:   1,
+			reqID:    2,
+			url1:     "first image url",
+			url2:     "second image url",
+			initMock: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
+				mRep.EXPECT().DeleteRequestAndImage(gomock.Any(), userID, reqID).Return(url1, url2, nil)
+				mStor.EXPECT().DeleteFile(gomock.Any(), url1).Return(errStorage)
+			},
+			wantErr: errStorage,
 		},
 		{
-			testName:        "error while deleting second image",
-			userID:          1,
-			reqID:           2,
-			repo1ID:         3,
-			repo2ID:         4,
-			deleteReqErr:    nil,
-			runDeleteImage1: true,
-			url1:            "first image url",
-			deleteIm1RepErr: nil,
-			runDeleteImage2: true,
-			deleteIm2RepErr: errRepository,
-			runDeleteFile1:  false,
-			runDeleteFile2:  false,
-			wantErr:         errRepository,
+			testName: "second image not exists",
+			userID:   1,
+			reqID:    2,
+			url1:     "first image id",
+			url2:     "",
+			initMock: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
+				mRep.EXPECT().DeleteRequestAndImage(gomock.Any(), userID, reqID).Return(url1, url2, nil)
+				mStor.EXPECT().DeleteFile(gomock.Any(), url1).Return(nil)
+			},
+			wantErr: nil,
 		},
 		{
-			testName:        "error while deleting first file",
-			userID:          1,
-			reqID:           2,
-			repo1ID:         3,
-			repo2ID:         4,
-			deleteReqErr:    nil,
-			runDeleteImage1: true,
-			url1:            "first image url",
-			deleteIm1RepErr: nil,
-			runDeleteImage2: true,
-			url2:            "second image url",
-			deleteIm2RepErr: nil,
-			runDeleteFile1:  true,
-			deleteFile1Err:  errStorage,
-			runDeleteFile2:  false,
-			wantErr:         errStorage,
-		},
-		{
-			testName:        "error while deleting second file",
-			userID:          1,
-			reqID:           2,
-			repo1ID:         3,
-			repo2ID:         4,
-			deleteReqErr:    nil,
-			runDeleteImage1: true,
-			url1:            "first image url",
-			deleteIm1RepErr: nil,
-			runDeleteImage2: true,
-			url2:            "second image url",
-			deleteIm2RepErr: nil,
-			runDeleteFile1:  true,
-			deleteFile1Err:  nil,
-			runDeleteFile2:  true,
-			deleteFile2Err:  errStorage,
-			wantErr:         errStorage,
+			testName: "error while deleting second file",
+			userID:   1,
+			reqID:    2,
+			url1:     "first image url",
+			url2:     "second image url",
+			initMock: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
+				mRep.EXPECT().DeleteRequestAndImage(gomock.Any(), userID, reqID).Return(url1, url2, nil)
+				mStor.EXPECT().DeleteFile(gomock.Any(), url1).Return(nil)
+				mStor.EXPECT().DeleteFile(gomock.Any(), url2).Return(errStorage)
+			},
+			wantErr: errStorage,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			mockCtr := gomock.NewController(t)
 			defer mockCtr.Finish()
-			mockRequest := mocks.NewMockRequester(mockCtr)
+			mockRequest := mocks.NewMockRequestRepo(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
+
+			tc.initMock(mockRequest, mockStorage, tc.userID, tc.reqID, tc.url1, tc.url2)
 
 			srvc := service.NewRequest(mockRequest, mockStorage, &mocks.MockImageProcesser{})
 			ctx := context.Background()
-
-			mockRequest.EXPECT().DeleteRequest(ctx, tc.userID, tc.reqID).Return(tc.repo1ID, tc.repo2ID, tc.deleteReqErr)
-
-			if tc.runDeleteImage1 {
-				mockRequest.EXPECT().DeleteImage(ctx, tc.userID, tc.repo1ID).Return(tc.url1, tc.deleteIm1RepErr)
-			}
-
-			if tc.runDeleteImage2 {
-				mockRequest.EXPECT().DeleteImage(ctx, tc.userID, tc.repo2ID).Return(tc.url2, tc.deleteIm2RepErr)
-			}
-
-			if tc.runDeleteFile1 {
-				mockStorage.EXPECT().DeleteFile(ctx, tc.url1).Return(tc.deleteFile1Err)
-			}
-
-			if tc.runDeleteFile2 {
-				mockStorage.EXPECT().DeleteFile(ctx, tc.url2).Return(tc.deleteFile2Err)
-			}
 
 			gotErr := srvc.DeleteRequest(ctx, tc.userID, tc.reqID)
 

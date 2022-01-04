@@ -3,6 +3,7 @@ package repository_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"regexp"
 	"testing"
@@ -13,11 +14,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func NewAuthMock(t *testing.T) (*repository.AuthPostgres, sqlmock.Sqlmock) {
+	t.Helper()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+
+	repo := repository.NewAuthPostgres(db)
+
+	return repo, mock
+}
+
+var createUserQuery = fmt.Sprintf(`INSERT INTO %s (nickname, email, password_hash)
+	 VALUES ($1, $2, $3) RETURNING id`, repository.UsersTable)
+
+var errAlreadyExists = errors.New("such row already exists")
+
 func TestCreateUser(t *testing.T) {
 	testCases := []struct {
 		testName string
 		user     model.User
-		repoErr  error
+		initMock func(sqlmock.Sqlmock, *model.User) sqlmock.Sqlmock
 		wantID   int
 		wantErr  error
 	}{
@@ -28,28 +47,39 @@ func TestCreateUser(t *testing.T) {
 				Email:    "my@email.com",
 				Password: "password",
 			},
-			repoErr: nil,
+			initMock: func(mock sqlmock.Sqlmock, user *model.User) sqlmock.Sqlmock {
+				rows := sqlmock.NewRows([]string{"id"}).AddRow(12)
+				mock.ExpectQuery(regexp.QuoteMeta(createUserQuery)).WithArgs(user.Nickname, user.Email, user.Password).
+					WillReturnRows(rows)
+
+				return mock
+			},
 			wantID:  12,
 			wantErr: nil,
 		},
-	}
+		{
+			testName: "such row already exists",
+			user: model.User{
+				Nickname: "alekse",
+				Email:    "my@email.com",
+				Password: "password",
+			},
+			initMock: func(mock sqlmock.Sqlmock, user *model.User) sqlmock.Sqlmock {
+				mock.ExpectQuery(regexp.QuoteMeta(createUserQuery)).WithArgs(user.Nickname, user.Email, user.Password).
+					WillReturnError(errAlreadyExists)
 
-	query := fmt.Sprintf(`INSERT INTO %s (nickname, email, password_hash)
-	 VALUES ($1, $2, $3) RETURNING id`, repository.UsersTable)
+				return mock
+			},
+			wantID:  0,
+			wantErr: errAlreadyExists,
+		},
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
+			repo, mock := NewAuthMock(t)
 
-			repo := repository.NewAuthPostgres(db)
-
-			rows := sqlmock.NewRows([]string{"id"}).AddRow(tc.wantID)
-
-			mock.ExpectQuery(regexp.QuoteMeta(query)).WithArgs(tc.user.Nickname, tc.user.Email, tc.user.Password).
-				WillReturnRows(rows)
+			mock = tc.initMock(mock, &tc.user)
 
 			gotID, gotErr := repo.CreateUser(context.Background(), tc.user)
 
@@ -63,52 +93,53 @@ func TestCreateUser(t *testing.T) {
 	}
 }
 
+var getPasswrodAndIDQuery = fmt.Sprintf("SELECT password_hash, id FROM %s WHERE nickname = ?", repository.UsersTable)
+
 func TestGetPasswordAndID(t *testing.T) {
 	testCases := []struct {
 		testName     string
-		userID       int
 		userNickname string
-		userPassword string
+		initMock     func(sqlmock.Sqlmock, string) sqlmock.Sqlmock
 		wantID       int
 		wantPassword []byte
 		wantErr      error
 	}{
 		{
 			testName:     "all is good",
-			userID:       12,
 			userNickname: "alekse",
-			userPassword: "password",
+			initMock: func(mock sqlmock.Sqlmock, nickname string) sqlmock.Sqlmock {
+				rows := sqlmock.NewRows([]string{"password_hash", "id"})
+				rows.AddRow("password", 12)
+
+				mock.ExpectQuery(getPasswrodAndIDQuery).WithArgs(nickname).
+					WillReturnRows(rows)
+
+				return mock
+			},
 			wantID:       12,
 			wantPassword: []byte("password"),
 			wantErr:      nil,
 		},
 		{
 			testName:     "unknown nickname",
-			userID:       12,
 			userNickname: "unknown",
-			userPassword: "password",
+			initMock: func(mock sqlmock.Sqlmock, nickname string) sqlmock.Sqlmock {
+				mock.ExpectQuery(getPasswrodAndIDQuery).WithArgs(nickname).
+					WillReturnError(sql.ErrNoRows)
+
+				return mock
+			},
 			wantID:       0,
 			wantPassword: nil,
 			wantErr:      sql.ErrNoRows,
 		},
 	}
 
-	query := fmt.Sprintf("SELECT password_hash, id FROM %s WHERE nickname = ?", repository.UsersTable)
-
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
+			repo, mock := NewAuthMock(t)
 
-			repo := repository.NewAuthPostgres(db)
-
-			rows := sqlmock.NewRows([]string{"password_hash", "id"})
-			if tc.wantPassword != nil && tc.wantID != 0 {
-				rows = rows.AddRow(tc.userPassword, tc.userID)
-			}
-			mock.ExpectQuery(query).WithArgs(tc.userNickname).WillReturnRows(rows)
+			mock = tc.initMock(mock, tc.userNickname)
 
 			gotPassword, gotID, gotErr := repo.GetPasswordHashAndID(context.Background(), tc.userNickname)
 

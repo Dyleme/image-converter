@@ -3,6 +3,7 @@ package repository_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -26,7 +27,7 @@ func NewReqMock(t *testing.T) (*repository.ReqPostgres, sqlmock.Sqlmock) {
 	return repo, mock
 }
 
-func RepoReturnID(repo *repository.ReqPostgres, id int) *sqlmock.Rows {
+func RepoReturnID(id int) *sqlmock.Rows {
 	rows := sqlmock.NewRows([]string{"id"})
 	if id != 0 {
 		rows = rows.AddRow(id)
@@ -35,12 +36,15 @@ func RepoReturnID(repo *repository.ReqPostgres, id int) *sqlmock.Rows {
 	return rows
 }
 
+var getRequestQuery = fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
+	 processed_id, ratio, original_type, processed_type FROM %s WHERE id = .+ and user_id = .+`, repository.RequestTable)
+
 func TestGetRequest(t *testing.T) {
 	testCases := []struct {
 		testName string
 		userID   int
 		reqID    int
-		repoReq  *model.Request
+		initMock func(sqlmock.Sqlmock, int, int, *model.Request) sqlmock.Sqlmock
 		wantReq  *model.Request
 		wantErr  error
 	}{
@@ -48,16 +52,17 @@ func TestGetRequest(t *testing.T) {
 			testName: "all is good",
 			userID:   12,
 			reqID:    19,
-			repoReq: &model.Request{
-				ID:             24,
-				OpStatus:       "done",
-				RequestTime:    time.Date(2020, 12, 12, 23, 23, 0, 1, time.Local),
-				CompletionTime: time.Date(2020, 12, 12, 23, 24, 0, 1, time.Local),
-				OriginalID:     12,
-				ProcessedID:    13,
-				Ratio:          0.5,
-				OriginalType:   "jpeg",
-				ProcessedType:  "png",
+			initMock: func(mock sqlmock.Sqlmock, userID, reqID int, req *model.Request) sqlmock.Sqlmock {
+				rows := sqlmock.NewRows([]string{"id", "op_status", "request_time", "completion_time",
+					"original_id", "processed_id", "ratio", "original_type", "processed_type"})
+
+				rows = rows.AddRow(req.ID, req.OpStatus, req.RequestTime, req.CompletionTime,
+					req.OriginalID, req.ProcessedID, req.Ratio,
+					req.OriginalType, req.ProcessedType)
+
+				mock.ExpectQuery(getRequestQuery).WithArgs(reqID, userID).
+					WillReturnRows(rows)
+				return mock
 			},
 			wantReq: &model.Request{
 				ID:             24,
@@ -76,29 +81,21 @@ func TestGetRequest(t *testing.T) {
 			testName: "no such row in db",
 			userID:   12,
 			reqID:    19,
-			repoReq:  nil,
-			wantReq:  nil,
-			wantErr:  sql.ErrNoRows,
+			initMock: func(mock sqlmock.Sqlmock, userID, reqID int, req *model.Request) sqlmock.Sqlmock {
+				mock.ExpectQuery(getRequestQuery).WithArgs(reqID, userID).
+					WillReturnError(sql.ErrNoRows)
+				return mock
+			},
+			wantReq: nil,
+			wantErr: sql.ErrNoRows,
 		},
 	}
-
-	query := fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
-	 processed_id, ratio, original_type, processed_type FROM %s WHERE id = .+ and user_id = .+`, repository.RequestTable)
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			repo, mock := NewReqMock(t)
 
-			rows := sqlmock.NewRows([]string{"id", "op_status", "request_time", "completion_time", "original_id", "processed_id",
-				"ratio", "original_type", "processed_type"})
-
-			if tc.repoReq != nil {
-				rows = rows.AddRow(tc.repoReq.ID, tc.repoReq.OpStatus, tc.repoReq.RequestTime, tc.repoReq.CompletionTime,
-					tc.repoReq.OriginalID, tc.repoReq.ProcessedID, tc.repoReq.Ratio,
-					tc.repoReq.OriginalType, tc.repoReq.ProcessedType)
-			}
-
-			mock.ExpectQuery(query).WithArgs(tc.reqID, tc.userID).WillReturnRows(rows)
+			mock = tc.initMock(mock, tc.userID, tc.reqID, tc.wantReq)
 
 			gotRequest, gotErr := repo.GetRequest(context.Background(), tc.userID, tc.reqID)
 
@@ -112,212 +109,245 @@ func TestGetRequest(t *testing.T) {
 	}
 }
 
-func TestAddRequest(t *testing.T) {
-	testCases := []struct {
-		testName string
-		userID   int
-		req      *model.Request
-		repoID   int
-		wantID   int
-		wantErr  error
-	}{
-		{
-			testName: "all is good",
-			userID:   12,
-			req: &model.Request{
-				ID:             24,
-				OpStatus:       "done",
-				RequestTime:    time.Date(2020, 12, 12, 23, 23, 0, 1, time.Local),
-				CompletionTime: time.Date(2020, 12, 12, 23, 24, 0, 1, time.Local),
-				OriginalID:     12,
-				ProcessedID:    13,
-				Ratio:          0.5,
-				OriginalType:   "jpeg",
-				ProcessedType:  "png",
-			},
-			repoID:  23,
-			wantID:  23,
-			wantErr: nil,
-		},
-	}
+var (
+	addImageQuery = fmt.Sprintf(`INSERT INTO %s \(im_type, image_url, user_id\)
+		VALUES (.+, .+, .+) RETURNING id;`, repository.ImageTable)
 
-	query := fmt.Sprintf(`INSERT INTO %s \(op_status, request_time, original_id, 
+	addRequestQuery = fmt.Sprintf(`INSERT INTO %s \(op_status, request_time, original_id, 
 		user_id, ratio, original_type, processed_type\)
 		VALUES (.+, .+, .+, .+, .+, .+, .+) RETURNING id;`, repository.RequestTable)
+)
 
-	for _, tc := range testCases {
-		t.Run(tc.testName, func(t *testing.T) {
-			repo, mock := NewReqMock(t)
+var (
+	errAddingImage   = errors.New("error while adding image")
+	errAddingRequest = errors.New("error while adding reqeust")
+)
 
-			rows := RepoReturnID(repo, tc.repoID)
-
-			mock.ExpectQuery(query).WithArgs(tc.req.OpStatus, tc.req.RequestTime,
-				tc.req.OriginalID, tc.userID, tc.req.Ratio, tc.req.OriginalType,
-				tc.req.ProcessedType).WillReturnRows(rows)
-
-			gotID, gotErr := repo.AddRequest(context.Background(), tc.req, tc.userID)
-
-			assert.ErrorIs(t, gotErr, tc.wantErr)
-			assert.Equal(t, gotID, tc.wantID)
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were fulfilled expectations: %s", err)
-			}
-		})
-	}
-}
-
-func TestAddImage(t *testing.T) {
+func TestAddImageAndRequest(t *testing.T) {
 	testCases := []struct {
 		testName  string
 		userID    int
+		reqID     int
+		reqInfo   *model.Request
 		imageInfo *model.ReuquestImageInfo
-		repoID    int
-		wantID    int
-		wantErr   error
+		initMock  func(int, *model.ReuquestImageInfo,
+			*model.Request) (*repository.ReqPostgres, sqlmock.Sqlmock)
+		imageID int
+		wantID  int
+		wantErr error
 	}{
 		{
 			testName: "all is good",
 			userID:   12,
 			imageInfo: &model.ReuquestImageInfo{
-				Type: "png",
-				URL:  "url to image",
+				Type: "jpeg",
+				URL:  "image url",
 			},
-			repoID:  23,
-			wantID:  23,
+			reqInfo: &model.Request{
+				OpStatus:      repository.StatusDone,
+				RequestTime:   time.Date(2022, 1, 3, 14, 36, 2, 32, &time.Location{}),
+				OriginalID:    26,
+				Ratio:         0.5,
+				OriginalType:  "jpeg",
+				ProcessedType: "type",
+			},
+			initMock: func(userID int, im *model.ReuquestImageInfo,
+				req *model.Request) (*repository.ReqPostgres, sqlmock.Sqlmock) {
+				repo, mock := NewReqMock(t)
+				imageRow := RepoReturnID(req.OriginalID)
+				reqRow := RepoReturnID(13)
+
+				mock.ExpectBegin()
+
+				mock.ExpectQuery(addImageQuery).WithArgs(im.Type, im.URL, userID).
+					WillReturnRows(imageRow)
+				mock.ExpectQuery(addRequestQuery).WithArgs(req.OpStatus, req.RequestTime,
+					req.OriginalID, userID, req.Ratio,
+					req.OriginalType, req.ProcessedType).
+					WillReturnRows(reqRow)
+
+				mock.ExpectCommit()
+
+				return repo, mock
+			},
+			wantID:  13,
 			wantErr: nil,
 		},
-	}
-
-	query := fmt.Sprintf(`INSERT INTO %s \(im_type, image_url, user_id\)
-		VALUES (.+, .+, .+) RETURNING id;`, repository.ImageTable)
-
-	for _, tc := range testCases {
-		t.Run(tc.testName, func(t *testing.T) {
-			repo, mock := NewReqMock(t)
-
-			rows := RepoReturnID(repo, tc.repoID)
-
-			mock.ExpectQuery(query).WithArgs(tc.imageInfo.Type, tc.imageInfo.URL, tc.userID).WillReturnRows(rows)
-
-			gotID, gotErr := repo.AddImage(context.Background(), tc.userID, *tc.imageInfo)
-
-			assert.ErrorIs(t, gotErr, tc.wantErr)
-			assert.Equal(t, gotID, tc.wantID)
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were fulfilled expectations: %s", err)
-			}
-		})
-	}
-}
-
-func TestDeleteRequest(t *testing.T) {
-	testCases := []struct {
-		testName  string
-		userID    int
-		reqID     int
-		im1repoID int
-		im2repoID int
-		wantIm1ID int
-		wantIm2ID int
-		wantErr   error
-	}{
 		{
-			testName:  "all is good",
-			userID:    12,
-			reqID:     13,
-			im1repoID: 23,
-			im2repoID: 24,
-			wantIm1ID: 23,
-			wantIm2ID: 24,
-			wantErr:   nil,
-		}, {
-			testName:  "such rown not exist",
-			userID:    12,
-			reqID:     13,
-			im1repoID: 0,
-			im2repoID: 0,
-			wantIm1ID: 0,
-			wantIm2ID: 0,
-			wantErr:   sql.ErrNoRows,
-		}, {
-			testName:  "only one id is exist in row",
-			userID:    12,
-			reqID:     13,
-			im1repoID: 23,
-			im2repoID: 0,
-			wantIm1ID: 23,
-			wantIm2ID: 0,
-			wantErr:   nil,
+			testName: "transaction rollback image error",
+			userID:   12,
+			imageInfo: &model.ReuquestImageInfo{
+				Type: "jpeg",
+				URL:  "image url",
+			},
+			reqInfo: &model.Request{
+				OpStatus:      repository.StatusDone,
+				RequestTime:   time.Date(2022, 1, 3, 14, 36, 2, 32, &time.Location{}),
+				OriginalID:    26,
+				Ratio:         0.5,
+				OriginalType:  "jpeg",
+				ProcessedType: "type",
+			},
+			initMock: func(userID int, im *model.ReuquestImageInfo,
+				req *model.Request) (*repository.ReqPostgres, sqlmock.Sqlmock) {
+				repo, mock := NewReqMock(t)
+
+				mock.ExpectBegin()
+
+				mock.ExpectQuery(addImageQuery).WithArgs(im.Type, im.URL, userID).
+					WillReturnError(errAddingImage)
+
+				mock.ExpectRollback()
+
+				return repo, mock
+			},
+			wantID:  0,
+			wantErr: errAddingImage,
+		},
+		{
+			testName: "transaction rollback request error",
+			userID:   12,
+			imageInfo: &model.ReuquestImageInfo{
+				Type: "jpeg",
+				URL:  "image url",
+			},
+			reqInfo: &model.Request{
+				OpStatus:      repository.StatusDone,
+				RequestTime:   time.Date(2022, 1, 3, 14, 36, 2, 32, &time.Location{}),
+				OriginalID:    26,
+				Ratio:         0.5,
+				OriginalType:  "jpeg",
+				ProcessedType: "type",
+			},
+			initMock: func(userID int, im *model.ReuquestImageInfo,
+				req *model.Request) (*repository.ReqPostgres, sqlmock.Sqlmock) {
+				repo, mock := NewReqMock(t)
+				imageRow := RepoReturnID(req.OriginalID)
+
+				mock.ExpectBegin()
+
+				mock.ExpectQuery(addImageQuery).WithArgs(im.Type, im.URL, userID).
+					WillReturnRows(imageRow)
+				mock.ExpectQuery(addRequestQuery).WithArgs(req.OpStatus, req.RequestTime,
+					req.OriginalID, userID, req.Ratio,
+					req.OriginalType, req.ProcessedType).
+					WillReturnError(errAddingRequest)
+
+				mock.ExpectRollback()
+
+				return repo, mock
+			},
+			wantID:  0,
+			wantErr: errAddingRequest,
 		},
 	}
 
-	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = .+ AND id = .+ 
-		RETURNING original_id, processed_id`, repository.RequestTable)
-
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			repo, mock := NewReqMock(t)
+			repo, mock := tc.initMock(tc.userID, tc.imageInfo, tc.reqInfo)
 
-			rows := sqlmock.NewRows([]string{"original_id", "processed_id"})
-
-			if tc.im1repoID != 0 {
-				rows = rows.AddRow(tc.im1repoID, tc.im2repoID)
-			}
-
-			mock.ExpectQuery(query).WithArgs(tc.userID, tc.reqID).WillReturnRows(rows)
-
-			gotIm1ID, gotIm2ID, gotErr := repo.DeleteRequest(context.Background(), tc.userID, tc.reqID)
+			reqID, gotErr := repo.AddImageAndRequest(context.Background(), tc.userID,
+				tc.imageInfo, tc.reqInfo)
 
 			assert.ErrorIs(t, gotErr, tc.wantErr)
-			assert.Equal(t, gotIm2ID, tc.wantIm2ID)
-			assert.Equal(t, gotIm1ID, tc.wantIm1ID)
+			assert.Equal(t, reqID, tc.wantID)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were fulfilled expectations: %s", err)
+				t.Errorf("there were fulfilled expectations: %v", err)
 			}
 		})
 	}
 }
 
-func TestDeleteImage(t *testing.T) {
+var delteRequestQuery = fmt.Sprintf(`DELETE FROM %s WHERE user_id = .+ AND id = .+ 
+		RETURNING original_id, processed_id`, repository.RequestTable)
+
+var deleteImageQuery = fmt.Sprintf(`DELETE FROM %s WHERE user_id = .+ AND id = .+
+		RETURNING image_url`, repository.ImageTable)
+
+func TestDeleteRequestAndImage(t *testing.T) {
 	testCases := []struct {
-		testName string
-		userID   int
-		imageID  int
-		repoURL  string
-		wantURL  string
-		wantErr  error
+		testName   string
+		userID     int
+		reqID      int
+		initMock   func(sqlmock.Sqlmock, int, int) sqlmock.Sqlmock
+		wantIm1URL string
+		wantIm2URL string
+		wantErr    error
 	}{
 		{
 			testName: "all is good",
 			userID:   12,
-			imageID:  23,
-			repoURL:  "url to image",
-			wantURL:  "url to image",
-			wantErr:  nil,
+			reqID:    13,
+			initMock: func(mock sqlmock.Sqlmock, userID, reqID int) sqlmock.Sqlmock {
+				idRows := sqlmock.NewRows([]string{"original_id", "processed_id"})
+				idRows.AddRow(23, 24)
+
+				url1Row := sqlmock.NewRows([]string{"image_url"}).AddRow("im 1 url")
+				url2Row := sqlmock.NewRows([]string{"image_url"}).AddRow("im 2 url")
+				mock.ExpectBegin()
+				mock.ExpectQuery(delteRequestQuery).WithArgs(userID, reqID).
+					WillReturnRows(idRows)
+				mock.ExpectQuery(deleteImageQuery).WithArgs(userID, 23).
+					WillReturnRows(url1Row)
+				mock.ExpectQuery(deleteImageQuery).WithArgs(userID, 24).
+					WillReturnRows(url2Row)
+				mock.ExpectCommit()
+				return mock
+			},
+			wantIm1URL: "im 1 url",
+			wantIm2URL: "im 2 url",
+			wantErr:    nil,
+		},
+		{
+			testName: "such rown not exist",
+			userID:   12,
+			reqID:    13,
+			initMock: func(mock sqlmock.Sqlmock, userID, reqID int) sqlmock.Sqlmock {
+				mock.ExpectBegin()
+				mock.ExpectQuery(delteRequestQuery).WithArgs(userID, reqID).
+					WillReturnError(sql.ErrNoRows)
+				mock.ExpectRollback()
+				return mock
+			},
+			wantIm1URL: "",
+			wantIm2URL: "",
+			wantErr:    sql.ErrNoRows,
+		},
+		{
+			testName: "only one id is exist in row",
+			userID:   12,
+			reqID:    13,
+			initMock: func(mock sqlmock.Sqlmock, userID, reqID int) sqlmock.Sqlmock {
+				idRows := sqlmock.NewRows([]string{"original_id", "processed_id"})
+				idRows.AddRow(23, 0)
+
+				url1Row := sqlmock.NewRows([]string{"image_url"}).AddRow("im 1 url")
+				mock.ExpectBegin()
+				mock.ExpectQuery(delteRequestQuery).WithArgs(userID, reqID).
+					WillReturnRows(idRows)
+				mock.ExpectQuery(deleteImageQuery).WithArgs(userID, 23).
+					WillReturnRows(url1Row)
+				mock.ExpectCommit()
+				return mock
+			},
+			wantIm1URL: "im 1 url",
+			wantIm2URL: "",
+			wantErr:    nil,
 		},
 	}
-
-	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = .+ AND id = .+ RETURNING image_url`, repository.ImageTable)
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			repo, mock := NewReqMock(t)
 
-			rows := sqlmock.NewRows([]string{"image_url"})
+			mock = tc.initMock(mock, tc.userID, tc.reqID)
 
-			if tc.repoURL != "" {
-				rows = rows.AddRow(tc.repoURL)
-			}
-
-			mock.ExpectQuery(query).WithArgs(tc.userID, tc.imageID).WillReturnRows(rows)
-
-			gotURL, gotErr := repo.DeleteImage(context.Background(), tc.userID, tc.imageID)
+			gotIm1URL, gotIm2URL, gotErr := repo.DeleteRequestAndImage(context.Background(), tc.userID, tc.reqID)
 
 			assert.ErrorIs(t, gotErr, tc.wantErr)
-			assert.Equal(t, gotURL, tc.wantURL)
+			assert.Equal(t, gotIm2URL, tc.wantIm2URL)
+			assert.Equal(t, gotIm1URL, tc.wantIm1URL)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were fulfilled expectations: %s", err)
