@@ -26,11 +26,9 @@ func (e NoPointInFilenameError) Error() string {
 
 type ConvertRepo interface {
 	GetConvInfo(ctx context.Context, reqID int) (*model.ConvImageInfo, error)
-	UpdateRequestStatus(ctx context.Context, reqID int, status string) error
 	SetImageResolution(ctx context.Context, imID int, width int, height int) error
-	AddProcessedImageIDToRequest(ctx context.Context, reqID, imageID int) error
-	AddProcessedTimeToRequest(ctx context.Context, reqID int, t time.Time) error
-	AddImage(ctx context.Context, userID int, imageInfo model.ReuquestImageInfo) (int, error)
+	AddImageDB(ctx context.Context, userID, reqID int, imgInfo *model.ReuquestImageInfo,
+		width, height int, status string, t time.Time) error
 }
 
 type ConvertRequest struct {
@@ -71,14 +69,27 @@ func (c *ConvertRequest) Convert(ctx context.Context, reqID int, filename string
 
 	convFileName := filename[:pointIndex] + info.NewType
 
-	newImgID, err := c.uploadImage(ctx, img, info.UserID, info.NewType, convFileName)
+	bts, err := encodeImage(img, info.NewType)
 	if err != nil {
 		return fmt.Errorf("conversion: %w", err)
 	}
 
-	err = c.updateRepoWithImage(ctx, newImgID, reqID)
+	newURL, err := c.storage.UploadFile(ctx, info.UserID, convFileName, bts)
 	if err != nil {
 		return fmt.Errorf("conversion: %w", err)
+	}
+
+	newImgInfo := model.ReuquestImageInfo{
+		URL:  newURL,
+		Type: info.NewType,
+	}
+
+	newWidth, newHeight := getResolution(img)
+
+	err = c.repo.AddImageDB(ctx, info.UserID, reqID, &newImgInfo,
+		newWidth, newHeight, repository.StatusDone, time.Now())
+	if err != nil {
+		return fmt.Errorf("update repo with image: %w", err)
 	}
 
 	return nil
@@ -91,55 +102,4 @@ func (c *ConvertRequest) getImage(ctx context.Context, url, fileType string) (im
 	}
 
 	return decodeImage(bytes.NewBuffer(bts), fileType)
-}
-
-func (c *ConvertRequest) updateRepoWithImage(ctx context.Context, newImgID, reqID int) error {
-	err := c.repo.AddProcessedImageIDToRequest(ctx, reqID, newImgID)
-	if err != nil {
-		return fmt.Errorf("update repo with image: %w", err)
-	}
-
-	err = c.repo.AddProcessedTimeToRequest(ctx, reqID, time.Now())
-	if err != nil {
-		return fmt.Errorf("upodate repo with image: %w", err)
-	}
-
-	err = c.repo.UpdateRequestStatus(ctx, reqID, repository.StatusDone)
-	if err != nil {
-		return fmt.Errorf("update repo with image: %w", err)
-	}
-
-	return nil
-}
-
-func (c *ConvertRequest) uploadImage(ctx context.Context, img image.Image,
-	userID int, fileType, filename string) (int, error) {
-	bts, err := encodeImage(img, fileType)
-	if err != nil {
-		return 0, fmt.Errorf("upload image: %w", err)
-	}
-
-	newURL, err := c.storage.UploadFile(ctx, userID, filename, bts)
-	if err != nil {
-		return 0, fmt.Errorf("upload image: %w", err)
-	}
-
-	newImgInfo := model.ReuquestImageInfo{
-		URL:  newURL,
-		Type: fileType,
-	}
-
-	newImgID, err := c.repo.AddImage(ctx, userID, newImgInfo)
-	if err != nil {
-		return 0, fmt.Errorf("upload image: %w", err)
-	}
-
-	newWidth, newHeight := getResolution(img)
-
-	err = c.repo.SetImageResolution(ctx, newImgID, newWidth, newHeight)
-	if err != nil {
-		return 0, fmt.Errorf("upload image: %w", err)
-	}
-
-	return newImgID, nil
 }

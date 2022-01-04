@@ -15,10 +15,9 @@ import (
 type RequestRepo interface {
 	GetRequests(ctx context.Context, id int) ([]model.Request, error)
 	GetRequest(ctx context.Context, userID, reqID int) (*model.Request, error)
-	AddRequest(ctx context.Context, req *model.Request, userID int) (int, error)
-	AddImage(ctx context.Context, userID int, imageInfo model.ReuquestImageInfo) (int, error)
-	DeleteRequest(ctx context.Context, userID, reqID int) (int, int, error)
-	DeleteImage(ctx context.Context, userID, imageID int) (string, error)
+	AddImageAndRequest(ctx context.Context, userID int, imageInfo *model.ReuquestImageInfo,
+		req *model.Request) (int, error)
+	DeleteRequestAndImage(ctx context.Context, userID, reqID int) (im1url, im2url string, err error)
 }
 
 // Request is a struct provides the abitility to get, add, delete and update requests.
@@ -102,23 +101,17 @@ func (s *Request) AddRequest(ctx context.Context, userID int, file io.Reader,
 		Type: oldType,
 	}
 
-	imageID, err := s.repo.AddImage(ctx, userID, imageInfo)
-	if err != nil {
-		return 0, fmt.Errorf("add request: %w", err)
-	}
-
 	req := model.Request{
 		OpStatus:      repository.StatusQueued,
 		RequestTime:   reqTime,
-		OriginalID:    imageID,
 		Ratio:         convInfo.Ratio,
 		OriginalType:  oldType,
 		ProcessedType: convInfo.Type,
 	}
 
-	reqID, err := s.repo.AddRequest(ctx, &req, userID)
+	reqID, err := s.repo.AddImageAndRequest(ctx, userID, &imageInfo, &req)
 	if err != nil {
-		return 0, fmt.Errorf("repo add request: %w", err)
+		return 0, fmt.Errorf("repo add image and request: %w", err)
 	}
 
 	convertImageData := &model.ConverstionedImage{
@@ -146,17 +139,7 @@ func (s *Request) GetRequest(ctx context.Context, userID, reqID int) (*model.Req
 // At first it deletes request using repo.DeleteRequest, than delete image from database using.DeleteImage
 // and finally it deletes images from the storage using storage.DeletFile.
 func (s *Request) DeleteRequest(ctx context.Context, userID, reqID int) error {
-	im1ID, im2ID, err := s.repo.DeleteRequest(ctx, userID, reqID)
-	if err != nil {
-		return err
-	}
-
-	url1, err := s.repo.DeleteImage(ctx, userID, im1ID)
-	if err != nil {
-		return err
-	}
-
-	url2, err := s.repo.DeleteImage(ctx, userID, im2ID)
+	url1, url2, err := s.repo.DeleteRequestAndImage(ctx, userID, reqID)
 	if err != nil {
 		return err
 	}
@@ -166,9 +149,11 @@ func (s *Request) DeleteRequest(ctx context.Context, userID, reqID int) error {
 		return err
 	}
 
-	err = s.storage.DeleteFile(ctx, url2)
-	if err != nil {
-		return err
+	if url2 != "" {
+		err = s.storage.DeleteFile(ctx, url2)
+		if err != nil {
+			return err
+		}
 	}
 
 	return err

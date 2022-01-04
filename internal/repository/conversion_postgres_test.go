@@ -2,12 +2,14 @@ package repository_test
 
 import (
 	"context"
-	"database/sql"
+	"errors"
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/repository"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,145 +27,177 @@ func NewConvMock(t *testing.T) (*repository.ConvPostgres, sqlmock.Sqlmock) {
 	return repo, mock
 }
 
-func TestUpdateRequestStatus(t *testing.T) {
+var addImageWithResolutionQuery = regexp.QuoteMeta(fmt.Sprintf(`INSERT INTO %s 
+(im_type, image_url, user_id, resoolution_x, resoolution_y)
+VALUES ($1, $2, $3, $4, $5) RETURNING id`, repository.ImageTable))
+var updateRequestStatusQuery = fmt.Sprintf(`UPDATE %s SET op_status = .+ 
+WHERE id = .+`, repository.RequestTable)
+var addProcessedIDQuery = fmt.Sprintf(`UPDATE %s SET processed_id = .+ 
+WHERE id = .+`, repository.RequestTable)
+var addProcessedTimeQuery = fmt.Sprintf(`UPDATE %s SET completion_time = .+ 
+WHERE id = .+`, repository.RequestTable)
+
+var (
+	errAddImageToDB     = errors.New("repo add image to db error")
+	errAddProcessedID   = errors.New("repo add processed id")
+	errAddProcessedTime = errors.New("repo add processed time error")
+	errUpdateStatus     = errors.New("repo update status error")
+)
+
+func TestAddImageDB(t *testing.T) {
 	testCases := []struct {
 		testName string
+		userID   int
 		reqID    int
+		imgInfo  *model.ReuquestImageInfo
 		status   string
-		repoID   int
+		width    int
+		height   int
+		time     time.Time
+		initMock func(sqlmock.Sqlmock, int, int, *model.ReuquestImageInfo, int, int, string, time.Time) sqlmock.Sqlmock
 		wantErr  error
 	}{
 		{
 			testName: "all is good",
-			reqID:    12,
-			status:   "done",
-			repoID:   23,
-			wantErr:  nil,
+			userID:   2,
+			reqID:    3,
+			imgInfo: &model.ReuquestImageInfo{
+				Type: "jpeg",
+				URL:  "image url",
+			},
+			status: repository.StatusDone,
+			time:   time.Date(2021, 1, 4, 10, 25, 34, 0, &time.Location{}),
+			initMock: func(mock sqlmock.Sqlmock, user, req int, imgInfo *model.ReuquestImageInfo,
+				width, height int, status string, t time.Time) sqlmock.Sqlmock {
+				imageID := 32
+				imageRow := RepoReturnID(imageID)
+				mock.ExpectBegin()
+				mock.ExpectQuery(addImageWithResolutionQuery).WithArgs(imgInfo.Type, imgInfo.URL,
+					user, width, height).WillReturnRows(imageRow)
+				mock.ExpectExec(addProcessedIDQuery).WithArgs(imageID, req).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectExec(addProcessedTimeQuery).WithArgs(t, req).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectExec(updateRequestStatusQuery).WithArgs(repository.StatusDone, req).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit()
+				return mock
+			},
+			wantErr: nil,
 		},
 		{
-			testName: "such row not present in database",
-			reqID:    12,
-			status:   "done",
-			repoID:   0,
-			wantErr:  sql.ErrNoRows,
+			testName: "error at update status",
+			userID:   2,
+			reqID:    3,
+			imgInfo: &model.ReuquestImageInfo{
+				Type: "jpeg",
+				URL:  "image url",
+			},
+			status: repository.StatusDone,
+			time:   time.Date(2021, 1, 4, 10, 25, 34, 0, &time.Location{}),
+			initMock: func(mock sqlmock.Sqlmock, user, req int, imgInfo *model.ReuquestImageInfo,
+				width, height int, status string, t time.Time) sqlmock.Sqlmock {
+				imageID := 32
+				imageRow := RepoReturnID(imageID)
+				mock.ExpectBegin()
+				mock.ExpectQuery(addImageWithResolutionQuery).WithArgs(imgInfo.Type, imgInfo.URL,
+					user, width, height).WillReturnRows(imageRow)
+				mock.ExpectExec(addProcessedIDQuery).WithArgs(imageID, req).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectExec(addProcessedTimeQuery).WithArgs(t, req).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectExec(updateRequestStatusQuery).WithArgs(repository.StatusDone, req).
+					WillReturnResult(sqlmock.NewErrorResult(errUpdateStatus))
+				mock.ExpectRollback()
+				return mock
+			},
+			wantErr: errUpdateStatus,
+		},
+		{
+			testName: "error at add time",
+			userID:   2,
+			reqID:    3,
+			imgInfo: &model.ReuquestImageInfo{
+				Type: "jpeg",
+				URL:  "image url",
+			},
+			status: repository.StatusDone,
+			time:   time.Date(2021, 1, 4, 10, 25, 34, 0, &time.Location{}),
+			initMock: func(mock sqlmock.Sqlmock, user, req int, imgInfo *model.ReuquestImageInfo,
+				width, height int, status string, t time.Time) sqlmock.Sqlmock {
+				imageID := 32
+				imageRow := RepoReturnID(imageID)
+				mock.ExpectBegin()
+				mock.ExpectQuery(addImageWithResolutionQuery).WithArgs(imgInfo.Type, imgInfo.URL,
+					user, width, height).WillReturnRows(imageRow)
+				mock.ExpectExec(addProcessedIDQuery).WithArgs(imageID, req).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectExec(addProcessedTimeQuery).WithArgs(t, req).
+					WillReturnResult(sqlmock.NewErrorResult(errAddProcessedTime))
+				mock.ExpectRollback()
+				return mock
+			},
+			wantErr: errAddProcessedTime,
+		},
+		{
+			testName: "error at add id",
+			userID:   2,
+			reqID:    3,
+			imgInfo: &model.ReuquestImageInfo{
+				Type: "jpeg",
+				URL:  "image url",
+			},
+			status: repository.StatusDone,
+			time:   time.Date(2021, 1, 4, 10, 25, 34, 0, &time.Location{}),
+			initMock: func(mock sqlmock.Sqlmock, user, req int, imgInfo *model.ReuquestImageInfo,
+				width, height int, status string, t time.Time) sqlmock.Sqlmock {
+				imageID := 32
+				imageRow := RepoReturnID(imageID)
+				mock.ExpectBegin()
+				mock.ExpectQuery(addImageWithResolutionQuery).WithArgs(imgInfo.Type, imgInfo.URL,
+					user, width, height).WillReturnRows(imageRow)
+				mock.ExpectExec(addProcessedIDQuery).WithArgs(imageID, req).
+					WillReturnResult(sqlmock.NewErrorResult(errAddProcessedID))
+				mock.ExpectRollback()
+				return mock
+			},
+			wantErr: errAddProcessedID,
+		},
+		{
+			testName: "error at add image to requests",
+			userID:   2,
+			reqID:    3,
+			imgInfo: &model.ReuquestImageInfo{
+				Type: "jpeg",
+				URL:  "image url",
+			},
+			status: repository.StatusDone,
+			time:   time.Date(2021, 1, 4, 10, 25, 34, 0, &time.Location{}),
+			initMock: func(mock sqlmock.Sqlmock, user, req int, imgInfo *model.ReuquestImageInfo,
+				width, height int, status string, t time.Time) sqlmock.Sqlmock {
+				mock.ExpectBegin()
+				mock.ExpectQuery(addImageWithResolutionQuery).WithArgs(imgInfo.Type, imgInfo.URL,
+					user, width, height).WillReturnError(errAddImageToDB)
+				mock.ExpectRollback()
+				return mock
+			},
+			wantErr: errAddImageToDB,
 		},
 	}
-
-	query := fmt.Sprintf(`UPDATE %s SET op_status = .+ WHERE id = .+ RETURNING id`, repository.RequestTable)
-
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			repo, mock := NewConvMock(t)
 
-			rows := sqlmock.NewRows([]string{"id"})
-			if tc.repoID != 0 {
-				rows = rows.AddRow(tc.repoID)
-			}
+			mock = tc.initMock(mock, tc.userID, tc.reqID,
+				tc.imgInfo, tc.width, tc.height, tc.status, tc.time)
 
-			mock.ExpectQuery(query).WithArgs(tc.status, tc.reqID).WillReturnRows(rows)
+			err := repo.AddImageDB(context.Background(), tc.userID, tc.reqID, tc.imgInfo,
+				tc.width, tc.height, tc.status, tc.time)
 
-			gotErr := repo.UpdateRequestStatus(context.Background(), tc.reqID, tc.status)
-
-			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.ErrorIs(t, err, tc.wantErr)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were fulfilled expectations: %s", err)
-			}
-		})
-	}
-}
-
-func TestAddProcessedImageIDToRequest(t *testing.T) {
-	testCases := []struct {
-		testName string
-		reqID    int
-		imageID  int
-		repoID   int
-		wantErr  error
-	}{
-		{
-			testName: "all is good",
-			reqID:    521,
-			imageID:  13,
-			repoID:   23,
-			wantErr:  nil,
-		},
-		{
-			testName: "such row not present in database",
-			reqID:    932,
-			imageID:  13,
-			repoID:   0,
-			wantErr:  sql.ErrNoRows,
-		},
-	}
-
-	query := fmt.Sprintf(`UPDATE %s SET processed_id = .+ WHERE id = .+ RETURNING id;`, repository.RequestTable)
-
-	for _, tc := range testCases {
-		t.Run(tc.testName, func(t *testing.T) {
-			repo, mock := NewConvMock(t)
-
-			rows := sqlmock.NewRows([]string{"id"})
-			if tc.repoID != 0 {
-				rows = rows.AddRow(tc.repoID)
-			}
-
-			mock.ExpectQuery(query).WithArgs(tc.imageID, tc.reqID).WillReturnRows(rows)
-
-			gotErr := repo.AddProcessedImageIDToRequest(context.Background(), tc.reqID, tc.imageID)
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were fulfilled expectations: %s", err)
-			}
-
-			assert.ErrorIs(t, gotErr, tc.wantErr)
-		})
-	}
-}
-
-func TestAddProcessedTimeToRequest(t *testing.T) {
-	testCases := []struct {
-		testName string
-		reqID    int
-		procTime time.Time
-		repoID   int
-		wantErr  error
-	}{
-		{
-			testName: "all is good",
-			reqID:    12,
-			procTime: time.Date(2012, 3, 12, 3, 23, 3, 4, time.Local),
-			repoID:   23,
-			wantErr:  nil,
-		},
-		{
-			testName: "such row not present in database",
-			reqID:    12,
-			procTime: time.Date(2012, 3, 12, 3, 23, 3, 4, time.Local),
-			repoID:   0,
-			wantErr:  sql.ErrNoRows,
-		},
-	}
-
-	query := fmt.Sprintf(`UPDATE %s SET completion_time = .+ WHERE id = .+ RETURNING id;`, repository.RequestTable)
-
-	for _, tc := range testCases {
-		t.Run(tc.testName, func(t *testing.T) {
-			repo, mock := NewConvMock(t)
-
-			rows := sqlmock.NewRows([]string{"id"})
-			if tc.repoID != 0 {
-				rows = rows.AddRow(tc.repoID)
-			}
-
-			mock.ExpectQuery(query).WithArgs(tc.procTime, tc.reqID).WillReturnRows(rows)
-
-			gotErr := repo.AddProcessedTimeToRequest(context.Background(), tc.reqID, tc.procTime)
-
-			assert.ErrorIs(t, gotErr, tc.wantErr)
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were fulfilled expectations: %s", err)
+				t.Errorf("there were fulfilled expectations: %v", err)
 			}
 		})
 	}
