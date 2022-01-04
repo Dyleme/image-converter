@@ -137,8 +137,8 @@ loop:
 			logger.Debug("get conversion reqeust")
 
 			var data model.ConverstionedImage
-			err := json.Unmarshal(d.Body, &data)
 
+			err := json.Unmarshal(d.Body, &data)
 			if err != nil {
 				logger.Warn("Umarshaling error")
 			}

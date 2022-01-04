@@ -3,10 +3,8 @@ package service
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"image"
-	"strings"
 	"time"
 
 	"github.com/Dyleme/image-coverter/internal/conversion"
@@ -14,20 +12,10 @@ import (
 	"github.com/Dyleme/image-coverter/internal/repository"
 )
 
-var ErrNoPointInFilename = errors.New("no potin in filename")
-
-type NoPointInFilenameError struct {
-	Filename string
-}
-
-func (e NoPointInFilenameError) Error() string {
-	return fmt.Sprintf("no point in filename: %s", e.Filename)
-}
-
 type ConvertRepo interface {
 	GetConvInfo(ctx context.Context, reqID int) (*model.ConvImageInfo, error)
 	SetImageResolution(ctx context.Context, imID int, width int, height int) error
-	AddImageDB(ctx context.Context, userID, reqID int, imgInfo *model.ReuquestImageInfo,
+	AddProcessedImage(ctx context.Context, userID, reqID int, imgInfo *model.ReuquestImageInfo,
 		width, height int, status string, t time.Time) error
 }
 
@@ -62,19 +50,12 @@ func (c *ConvertRequest) Convert(ctx context.Context, reqID int, filename string
 		img = conversion.Resize(img, info.Ratio)
 	}
 
-	pointIndex := strings.LastIndex(filename, ".")
-	if pointIndex == -1 {
-		return &NoPointInFilenameError{Filename: filename}
-	}
-
-	convFileName := filename[:pointIndex] + info.NewType
-
 	bts, err := encodeImage(img, info.NewType)
 	if err != nil {
 		return fmt.Errorf("conversion: %w", err)
 	}
 
-	newURL, err := c.storage.UploadFile(ctx, info.UserID, convFileName, bts)
+	newURL, err := c.storage.UploadFile(ctx, info.UserID, filename, bts)
 	if err != nil {
 		return fmt.Errorf("conversion: %w", err)
 	}
@@ -86,7 +67,7 @@ func (c *ConvertRequest) Convert(ctx context.Context, reqID int, filename string
 
 	newWidth, newHeight := getResolution(img)
 
-	err = c.repo.AddImageDB(ctx, info.UserID, reqID, &newImgInfo,
+	err = c.repo.AddProcessedImage(ctx, info.UserID, reqID, &newImgInfo,
 		newWidth, newHeight, repository.StatusDone, time.Now())
 	if err != nil {
 		return fmt.Errorf("update repo with image: %w", err)

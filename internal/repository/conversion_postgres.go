@@ -59,12 +59,12 @@ func (c *ConvPostgres) SetImageResolution(ctx context.Context, imID, width, heig
 	return oneRowInResult(result)
 }
 
-// AddImageDB is a colmplex method that creates thransaction.
+// AddProcessedImage is a colmplex method that creates thransaction.
 // And in this transaction at first it add image to the images table.
 // Then it sets resolution of this image. After it add this image, processed time
 // to the requests table and updates request status.
 // Returns any error occurred in transaction or while creatring transaction.
-func (c *ConvPostgres) AddImageDB(ctx context.Context, userID, reqID int, imgInfo *model.ReuquestImageInfo,
+func (c *ConvPostgres) AddProcessedImage(ctx context.Context, userID, reqID int, imgInfo *model.ReuquestImageInfo,
 	width, height int, status string, t time.Time) error {
 	err := c.db.inTx(ctx, func(tx *sql.Tx) error {
 		imID, err := addImageWithResolution(ctx, tx, userID, *imgInfo, width, height)
