@@ -59,16 +59,15 @@ func NewRabbitSender(c *Config) (*RabbitSender, error) {
 }
 
 // This function is used to send images and data to convert it, to the message broker.
-func (r *RabbitSender) ProcessImage(ctx context.Context, data *model.ConverstionedImage) {
-	r.SendJSON(ctx, data)
+func (r *RabbitSender) ProcessImage(ctx context.Context, data *model.RequestToProcess) error {
+	return r.SendJSON(ctx, data)
 }
 
 // This function send data to the message broker.
 // At first this function initialize queue to communicate with message broker,
 // Then it marshals data in json and send this json to the queue.
 // If any error occurs, this function log it to the logger, getted from context.
-func (r *RabbitSender) SendJSON(ctx context.Context, data interface{}) {
-	logger := logging.FromContext(ctx)
+func (r *RabbitSender) SendJSON(ctx context.Context, data interface{}) error {
 	q, err := r.ch.QueueDeclare(
 		queueName,
 		true,  // durable
@@ -79,14 +78,12 @@ func (r *RabbitSender) SendJSON(ctx context.Context, data interface{}) {
 	)
 
 	if err != nil {
-		logger.Errorf("send json: unable to make a queue: %v", err)
-		return
+		return fmt.Errorf("send json: unable to make a queue: %w", err)
 	}
 
 	jsn, err := json.Marshal(data)
 	if err != nil {
-		logger.Errorf("send json: %v", err)
-		return
+		return fmt.Errorf("send json: %w", err)
 	}
 
 	err = r.ch.Publish(
@@ -101,9 +98,10 @@ func (r *RabbitSender) SendJSON(ctx context.Context, data interface{}) {
 		})
 
 	if err != nil {
-		logger.Errorf("send json: uanble to publish message")
-		return
+		return fmt.Errorf("send json: uanble to publish message")
 	}
+
+	return nil
 }
 
 // Converter is an interface which provide functions to convert images.
@@ -136,7 +134,7 @@ loop:
 		case d := <-msgs:
 			logger.Debug("get conversion reqeust")
 
-			var data model.ConverstionedImage
+			var data model.RequestToProcess
 
 			err := json.Unmarshal(d.Body, &data)
 			if err != nil {

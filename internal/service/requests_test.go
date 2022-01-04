@@ -11,7 +11,6 @@ import (
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/service"
 	"github.com/Dyleme/image-coverter/internal/service/mocks"
-	"github.com/Dyleme/image-coverter/internal/storage"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -255,12 +254,12 @@ func TestAddReqeust(t *testing.T) {
 				Ratio: 0.5,
 				Type:  "png",
 			},
-			storageErr:    storage.ErrBucketNotExist,
+			storageErr:    errStorage,
 			runUploadFile: true,
 			reqRepoErr:    nil,
 			repoReqID:     15,
 			wantReqID:     0,
-			wantErr:       storage.ErrBucketNotExist,
+			wantErr:       errStorage,
 		},
 	}
 	for _, tc := range testCases {

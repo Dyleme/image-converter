@@ -36,7 +36,7 @@ func NewMinioStorage(conf MinioConfig) (*MinioStorage, error) {
 }
 
 // GetFile method get file from minio storage and return it's bytes.
-func (m *MinioStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
+func (m *MinioStorage) GetFile(_ context.Context, path string) ([]byte, error) {
 	exist, err := m.client.BucketExists("images")
 
 	if err != nil {
@@ -63,7 +63,7 @@ func (m *MinioStorage) GetFile(ctx context.Context, path string) ([]byte, error)
 }
 
 // UploadFile method upload provided file to the minio storage and returns path to the file.
-func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName string, data []byte) (string, error) {
+func (m *MinioStorage) UploadFile(_ context.Context, userID int, fileName string, data []byte) (string, error) {
 	exist, err := m.client.BucketExists("images")
 	if err != nil {
 		return "", fmt.Errorf("can not upload file: %w", err)
@@ -90,7 +90,7 @@ func (m *MinioStorage) UploadFile(ctx context.Context, userID int, fileName stri
 }
 
 // DeleteFile method delete file from the minio storage and return an error if any occurs.
-func (m *MinioStorage) DeleteFile(ctx context.Context, path string) error {
+func (m *MinioStorage) DeleteFile(_ context.Context, path string) error {
 	exist, err := m.client.BucketExists("images")
 	if err != nil {
 		return err

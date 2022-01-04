@@ -35,7 +35,9 @@ func (dh *Download) DownloadImage(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := jwt.GetUserFromContext(ctx)
 	if err != nil {
+		dh.logger.Warn(err)
 		newErrorResponse(w, http.StatusUnauthorized, err.Error())
+
 		return
 	}
 
@@ -43,19 +45,25 @@ func (dh *Download) DownloadImage(w http.ResponseWriter, r *http.Request) {
 	strImageID, ok := vars["id"]
 
 	if !ok {
+		dh.logger.Warn(err)
 		newErrorResponse(w, http.StatusBadRequest, `parameter "id" is missing`)
+
 		return
 	}
 
 	imageID, err := strconv.Atoi(strImageID)
 	if err != nil {
+		dh.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+
 		return
 	}
 
 	b, err := dh.downloadService.DownloadImage(ctx, userID, imageID)
 	if err != nil {
+		dh.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+
 		return
 	}
 

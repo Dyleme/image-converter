@@ -3,7 +3,6 @@ package storage
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/Dyleme/image-coverter/internal/logging"
@@ -34,8 +33,6 @@ func NewAwsStorage(bucketName string, config *aws.Config) (*AwsStorage, error) {
 	return &AwsStorage{session: sess, uploader: uploader, downloader: downloader, bucketName: bucketName}, nil
 }
 
-var ErrReadIsEmpty = errors.New("read empty file")
-
 // GetFile is used to get file from S3 storage.
 // Returns an error, any occurs.
 func (a *AwsStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
@@ -46,14 +43,10 @@ func (a *AwsStorage) GetFile(ctx context.Context, path string) ([]byte, error) {
 
 	var b []byte
 	buf := aws.NewWriteAtBuffer(b)
-	n, err := a.downloader.Download(buf, downParams)
+	_, err := a.downloader.Download(buf, downParams)
 
 	if err != nil {
 		return nil, fmt.Errorf("get file: %w", err)
-	}
-
-	if n == 0 {
-		return nil, ErrReadIsEmpty
 	}
 
 	return buf.Bytes(), nil
