@@ -30,6 +30,8 @@ type DBConfig struct {
 	SSLMode  string
 }
 
+// TxDb is a struct which compose *sql.DB.
+// It is made to provide inTx(...) method  to make querys in transaction.
 type TxDB struct {
 	*sql.DB
 }
@@ -54,19 +56,31 @@ func NewPostgresDB(conf *DBConfig) (*sql.DB, error) {
 	return db, nil
 }
 
+// NotSingleRowAffectedError is error which is used when not one raw came from Query.
+type NotSingleRowAffectedError struct {
+	amountAffected int
+}
+
+func (e *NotSingleRowAffectedError) Error() string {
+	return fmt.Sprintf("expected single row affected, got %v rows affected", e.amountAffected)
+}
+
+// oneRowInResult is a function check if result has one row,
+// returns NotSingleRowAffectedError if no.
 func oneRowInResult(result sql.Result) error {
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("repo: %w", err)
+		return err
 	}
 
 	if rows != 1 {
-		return fmt.Errorf("repo: %w", &NotSingleRowAffectedError{int(rows)})
+		return &NotSingleRowAffectedError{int(rows)}
 	}
 
 	return nil
 }
 
+// inTx is method which allows you to make queries in transaction.
 func (db *TxDB) inTx(ctx context.Context, fn func(tx *sql.Tx) error) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {

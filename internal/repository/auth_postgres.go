@@ -39,11 +39,13 @@ func (r *AuthPostgres) GetPasswordHashAndID(ctx context.Context, nickname string
 	query := fmt.Sprintf("SELECT password_hash, id FROM %s WHERE nickname = $1", UsersTable)
 	row := r.db.QueryRowContext(ctx, query, nickname)
 
-	if row == nil {
+	err = row.Scan(&hash, &userID)
+
+	if errors.Is(err, ErrUserNotExist) {
 		return nil, 0, fmt.Errorf("repo: %w", ErrUserNotExist)
 	}
 
-	if err := row.Scan(&hash, &userID); err != nil {
+	if err != nil {
 		return nil, 0, fmt.Errorf("repo: %w", err)
 	}
 

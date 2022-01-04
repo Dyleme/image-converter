@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
@@ -26,18 +27,18 @@ func NewConvMock(t *testing.T) (*repository.ConvPostgres, sqlmock.Sqlmock) {
 	return repo, mock
 }
 
+var addImageWithResolutionQuery = regexp.QuoteMeta(fmt.Sprintf(`INSERT INTO %s 
+(im_type, image_url, user_id, resoolution_x, resoolution_y)
+VALUES ($1, $2, $3, $4, $5) RETURNING id`, repository.ImageTable))
 var updateRequestStatusQuery = fmt.Sprintf(`UPDATE %s SET op_status = .+ 
 WHERE id = .+`, repository.RequestTable)
 var addProcessedIDQuery = fmt.Sprintf(`UPDATE %s SET processed_id = .+ 
 WHERE id = .+`, repository.RequestTable)
 var addProcessedTimeQuery = fmt.Sprintf(`UPDATE %s SET completion_time = .+ 
 WHERE id = .+`, repository.RequestTable)
-var setImageResolutionQuery = fmt.Sprintf(`UPDATE %s SET resoolution_x = .+, resoolution_y = .+ 
-WHERE id = .+`, repository.ImageTable)
 
 var (
 	errAddImageToDB     = errors.New("repo add image to db error")
-	errSetResolution    = errors.New("repo set image resolution error")
 	errAddProcessedID   = errors.New("repo add processed id")
 	errAddProcessedTime = errors.New("repo add processed time error")
 	errUpdateStatus     = errors.New("repo update status error")
@@ -71,10 +72,8 @@ func TestAddImageDB(t *testing.T) {
 				imageID := 32
 				imageRow := RepoReturnID(imageID)
 				mock.ExpectBegin()
-				mock.ExpectQuery(addImageQuery).WithArgs(imgInfo.Type, imgInfo.URL, user).
-					WillReturnRows(imageRow)
-				mock.ExpectExec(setImageResolutionQuery).WithArgs(width, height, imageID).
-					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectQuery(addImageWithResolutionQuery).WithArgs(imgInfo.Type, imgInfo.URL,
+					user, width, height).WillReturnRows(imageRow)
 				mock.ExpectExec(addProcessedIDQuery).WithArgs(imageID, req).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				mock.ExpectExec(addProcessedTimeQuery).WithArgs(t, req).
@@ -101,10 +100,8 @@ func TestAddImageDB(t *testing.T) {
 				imageID := 32
 				imageRow := RepoReturnID(imageID)
 				mock.ExpectBegin()
-				mock.ExpectQuery(addImageQuery).WithArgs(imgInfo.Type, imgInfo.URL, user).
-					WillReturnRows(imageRow)
-				mock.ExpectExec(setImageResolutionQuery).WithArgs(width, height, imageID).
-					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectQuery(addImageWithResolutionQuery).WithArgs(imgInfo.Type, imgInfo.URL,
+					user, width, height).WillReturnRows(imageRow)
 				mock.ExpectExec(addProcessedIDQuery).WithArgs(imageID, req).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				mock.ExpectExec(addProcessedTimeQuery).WithArgs(t, req).
@@ -131,10 +128,8 @@ func TestAddImageDB(t *testing.T) {
 				imageID := 32
 				imageRow := RepoReturnID(imageID)
 				mock.ExpectBegin()
-				mock.ExpectQuery(addImageQuery).WithArgs(imgInfo.Type, imgInfo.URL, user).
-					WillReturnRows(imageRow)
-				mock.ExpectExec(setImageResolutionQuery).WithArgs(width, height, imageID).
-					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectQuery(addImageWithResolutionQuery).WithArgs(imgInfo.Type, imgInfo.URL,
+					user, width, height).WillReturnRows(imageRow)
 				mock.ExpectExec(addProcessedIDQuery).WithArgs(imageID, req).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				mock.ExpectExec(addProcessedTimeQuery).WithArgs(t, req).
@@ -159,40 +154,14 @@ func TestAddImageDB(t *testing.T) {
 				imageID := 32
 				imageRow := RepoReturnID(imageID)
 				mock.ExpectBegin()
-				mock.ExpectQuery(addImageQuery).WithArgs(imgInfo.Type, imgInfo.URL, user).
-					WillReturnRows(imageRow)
-				mock.ExpectExec(setImageResolutionQuery).WithArgs(width, height, imageID).
-					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectQuery(addImageWithResolutionQuery).WithArgs(imgInfo.Type, imgInfo.URL,
+					user, width, height).WillReturnRows(imageRow)
 				mock.ExpectExec(addProcessedIDQuery).WithArgs(imageID, req).
 					WillReturnResult(sqlmock.NewErrorResult(errAddProcessedID))
 				mock.ExpectRollback()
 				return mock
 			},
 			wantErr: errAddProcessedID,
-		},
-		{
-			testName: "error at set resolution",
-			userID:   2,
-			reqID:    3,
-			imgInfo: &model.ReuquestImageInfo{
-				Type: "jpeg",
-				URL:  "image url",
-			},
-			status: repository.StatusDone,
-			time:   time.Date(2021, 1, 4, 10, 25, 34, 0, &time.Location{}),
-			initMock: func(mock sqlmock.Sqlmock, user, req int, imgInfo *model.ReuquestImageInfo,
-				width, height int, status string, t time.Time) sqlmock.Sqlmock {
-				imageID := 32
-				imageRow := RepoReturnID(imageID)
-				mock.ExpectBegin()
-				mock.ExpectQuery(addImageQuery).WithArgs(imgInfo.Type, imgInfo.URL, user).
-					WillReturnRows(imageRow)
-				mock.ExpectExec(setImageResolutionQuery).WithArgs(width, height, imageID).
-					WillReturnResult(sqlmock.NewErrorResult(errSetResolution))
-				mock.ExpectRollback()
-				return mock
-			},
-			wantErr: errSetResolution,
 		},
 		{
 			testName: "error at add image to requests",
@@ -207,8 +176,8 @@ func TestAddImageDB(t *testing.T) {
 			initMock: func(mock sqlmock.Sqlmock, user, req int, imgInfo *model.ReuquestImageInfo,
 				width, height int, status string, t time.Time) sqlmock.Sqlmock {
 				mock.ExpectBegin()
-				mock.ExpectQuery(addImageQuery).WithArgs(imgInfo.Type, imgInfo.URL, user).
-					WillReturnError(errAddImageToDB)
+				mock.ExpectQuery(addImageWithResolutionQuery).WithArgs(imgInfo.Type, imgInfo.URL,
+					user, width, height).WillReturnError(errAddImageToDB)
 				mock.ExpectRollback()
 				return mock
 			},
