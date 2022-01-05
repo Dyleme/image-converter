@@ -20,7 +20,7 @@ var (
 	errStorage    = errors.New("error in storage")
 )
 
-func TestGetRequests(t *testing.T) {
+func TestRequest_GetRequests(t *testing.T) {
 	testCases := []struct {
 		testName string
 		userID   int
@@ -111,7 +111,7 @@ func TestGetRequests(t *testing.T) {
 	}
 }
 
-func TestGetRequest(t *testing.T) {
+func TestRequest_GetRequest(t *testing.T) {
 	testCases := []struct {
 		testName string
 		userID   int
@@ -191,7 +191,7 @@ func loadImage(t *testing.T, path string) []byte {
 	return b
 }
 
-func TestAddReqeust(t *testing.T) {
+func TestRequest_AddReqeust(t *testing.T) {
 	pngTestImage := loadImage(t, "test_data/x.png")
 
 	testCases := []struct {
@@ -296,7 +296,7 @@ func TestAddReqeust(t *testing.T) {
 	}
 }
 
-func TestDeleteReqeust(t *testing.T) {
+func TestRequest_DeleteReqeust(t *testing.T) {
 	testCases := []struct {
 		testName string
 		userID   int

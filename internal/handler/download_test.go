@@ -19,7 +19,7 @@ import (
 
 var errDownloading = errors.New("error in downloading")
 
-func Test(t *testing.T) {
+func TestDownload_Download(t *testing.T) {
 	testCases := []struct {
 		testName     string
 		method       string

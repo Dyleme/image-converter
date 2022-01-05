@@ -37,7 +37,7 @@ func (g *genJwtMock) CreateToken(ctx context.Context, id int) (string, error) {
 	return "jwt" + strconv.Itoa(id), nil
 }
 
-func TestCreateUser(t *testing.T) {
+func TestAuth_CreateUser(t *testing.T) {
 	testCases := []struct {
 		testName  string
 		user      model.User
@@ -92,7 +92,7 @@ func TestCreateUser(t *testing.T) {
 	}
 }
 
-func TestValidateUser(t *testing.T) {
+func TestAuth_ValidateUser(t *testing.T) {
 	testCases := []struct {
 		testName   string
 		user       model.User

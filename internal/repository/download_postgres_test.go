@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetImageUrl(t *testing.T) {
+func TestDownloadPostgres_GetImageUrl(t *testing.T) {
 	testCases := []struct {
 		testName string
 		userID   int

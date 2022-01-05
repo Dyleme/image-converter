@@ -44,7 +44,7 @@ var (
 	errUpdateStatus     = errors.New("repo update status error")
 )
 
-func TestAddImageDB(t *testing.T) {
+func TestConvPostgres_AddImageDB(t *testing.T) {
 	testCases := []struct {
 		testName string
 		userID   int
