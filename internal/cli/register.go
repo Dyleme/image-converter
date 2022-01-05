@@ -30,38 +30,43 @@ connect using this file.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("register called")
 
-		var (
-			body []byte
-			err  error
-		)
-
-		if loginSourceFile != "" {
-			body, err = credentialsFromFile(registerSourceFile)
-
-		} else {
-			if registerNickname != "" && registerPassword != "" {
-				body, err = credentialsFromArgs(registerNickname, registerPassword, registerEmail)
-
-			} else {
-				return fmt.Errorf("you should specify the source file or nickname and password")
-			}
-		}
-		if err != nil {
-			return err
-		}
-
-		resp, err := http.Post(url+"/auth/register", "application/json", bytes.NewBuffer(body))
-		if err != nil {
-			return err
-		}
-
-		if resp.StatusCode == http.StatusOK {
-			fmt.Println("Successful registration")
-		} else {
-			fmt.Println(resp.Status)
-		}
-		return nil
+		return Register(loginSourceFile, registerNickname, registerPassword)
 	},
+}
+
+func Register(loginSourceFile, registerNickname, registerPassword string) error {
+	var (
+		body []byte
+		err  error
+	)
+
+	if loginSourceFile != "" {
+		body, err = credentialsFromFile(registerSourceFile)
+	} else {
+		if registerNickname != "" && registerPassword != "" {
+			body, err = credentialsFromArgs(registerNickname, registerPassword, registerEmail)
+		} else {
+			return fmt.Errorf("you should specify the source file or nickname and password")
+		}
+	}
+
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(url+"/auth/register", "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		fmt.Println("Successful registration")
+	} else {
+		return WrongStatusError{409}
+	}
+
+	return nil
 }
 
 func init() {
