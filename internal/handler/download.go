@@ -12,7 +12,7 @@ import (
 
 // Downloader is an interface which has method to download image.
 type Downloader interface {
-	DownloadImage(ctx context.Context, userID, imageID int) ([]byte, error)
+	DownloadImage(ctx context.Context, userID, imageID int) ([]byte, string, error)
 }
 
 // Struct which provides method to handle downloading.
@@ -59,7 +59,7 @@ func (dh *Download) DownloadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	b, err := dh.downloadService.DownloadImage(ctx, userID, imageID)
+	b, filename, err := dh.downloadService.DownloadImage(ctx, userID, imageID)
 	if err != nil {
 		dh.logger.Warn(err)
 		newErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -67,5 +67,5 @@ func (dh *Download) DownloadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newDownloadFileResponse(w, b)
+	newDownloadFileResponse(w, b, filename)
 }

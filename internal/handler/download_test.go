@@ -21,20 +21,21 @@ var errDownloading = errors.New("error in downloading")
 
 func Test(t *testing.T) {
 	testCases := []struct {
-		testName   string
-		method     string
-		path       string
-		imageID    string
-		configure  func(*http.Request, *mocks.MockDownloader) *http.Request
-		wantStatus int
-		wantBody   string
+		testName     string
+		method       string
+		path         string
+		imageID      string
+		configure    func(*http.Request, *mocks.MockDownloader) *http.Request
+		wantStatus   int
+		wantBody     string
+		wantFilename string
 	}{
 		{
 			testName: "ok",
 			method:   http.MethodGet,
 			path:     "image/download/12",
 			configure: func(r *http.Request, md *mocks.MockDownloader) *http.Request {
-				md.EXPECT().DownloadImage(gomock.Any(), 2, 12).Return([]byte("body"), nil).Times(1)
+				md.EXPECT().DownloadImage(gomock.Any(), 2, 12).Return([]byte("body"), "filename", nil).Times(1)
 
 				r = mux.SetURLVars(r, map[string]string{
 					"id": "12",
@@ -44,8 +45,9 @@ func Test(t *testing.T) {
 
 				return r.WithContext(ctx)
 			},
-			wantStatus: http.StatusOK,
-			wantBody:   "body",
+			wantStatus:   http.StatusOK,
+			wantBody:     "body",
+			wantFilename: `filename="filename"`,
 		},
 		{
 			testName: "no auth",
@@ -54,8 +56,9 @@ func Test(t *testing.T) {
 			configure: func(r *http.Request, md *mocks.MockDownloader) *http.Request {
 				return r
 			},
-			wantStatus: http.StatusUnauthorized,
-			wantBody:   `{"message":"can't get user from context"}`,
+			wantStatus:   http.StatusUnauthorized,
+			wantBody:     `{"message":"can't get user from context"}`,
+			wantFilename: "",
 		},
 		{
 			testName: "parameter is missing",
@@ -65,8 +68,9 @@ func Test(t *testing.T) {
 				ctx := context.WithValue(r.Context(), jwt.KeyUserID, 2)
 				return r.WithContext(ctx)
 			},
-			wantStatus: http.StatusBadRequest,
-			wantBody:   `{"message":"parameter \"id\" is missing"}`,
+			wantStatus:   http.StatusBadRequest,
+			wantBody:     `{"message":"parameter \"id\" is missing"}`,
+			wantFilename: "",
 		},
 		{
 			testName: "other parameter is provided",
@@ -79,8 +83,9 @@ func Test(t *testing.T) {
 				ctx := context.WithValue(r.Context(), jwt.KeyUserID, 2)
 				return r.WithContext(ctx)
 			},
-			wantStatus: http.StatusBadRequest,
-			wantBody:   `{"message":"parameter \"id\" is missing"}`,
+			wantStatus:   http.StatusBadRequest,
+			wantBody:     `{"message":"parameter \"id\" is missing"}`,
+			wantFilename: "",
 		},
 		{
 			testName: "id is not int",
@@ -93,15 +98,16 @@ func Test(t *testing.T) {
 				ctx := context.WithValue(r.Context(), jwt.KeyUserID, 2)
 				return r.WithContext(ctx)
 			},
-			wantStatus: http.StatusInternalServerError,
-			wantBody:   `{"message":"strconv.Atoi: parsing \"not int\": invalid syntax"}`,
+			wantStatus:   http.StatusInternalServerError,
+			wantBody:     `{"message":"strconv.Atoi: parsing \"not int\": invalid syntax"}`,
+			wantFilename: "",
 		},
 		{
-			testName: "ok",
+			testName: "err in downloading",
 			method:   http.MethodGet,
 			path:     "image/download/12",
 			configure: func(r *http.Request, md *mocks.MockDownloader) *http.Request {
-				md.EXPECT().DownloadImage(gomock.Any(), 2, 12).Return(nil, errDownloading).Times(1)
+				md.EXPECT().DownloadImage(gomock.Any(), 2, 12).Return(nil, "filaname", errDownloading).Times(1)
 
 				r = mux.SetURLVars(r, map[string]string{
 					"id": "12",
@@ -111,8 +117,9 @@ func Test(t *testing.T) {
 
 				return r.WithContext(ctx)
 			},
-			wantStatus: http.StatusInternalServerError,
-			wantBody:   `{"message":"error in downloading"}`,
+			wantStatus:   http.StatusInternalServerError,
+			wantBody:     `{"message":"error in downloading"}`,
+			wantFilename: "",
 		},
 	}
 	for _, tc := range testCases {
@@ -135,6 +142,9 @@ func Test(t *testing.T) {
 			downHandler.DownloadImage(rr, req)
 
 			assert.Equal(t, rr.Code, tc.wantStatus)
+			if rr.Code == http.StatusOK {
+				assert.Equal(t, rr.Header()["Content-Disposition"][1], tc.wantFilename)
+			}
 			assert.Equal(t, rr.Body.String(), tc.wantBody)
 		})
 	}

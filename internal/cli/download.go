@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -28,7 +29,7 @@ To get in you can run "requests" command`,
 		fmt.Println("download called")
 
 		if destPath == "" {
-			destPath = "image.png"
+			destPath = ""
 		}
 
 		err := downloadFile(imageID, destPath)
@@ -40,7 +41,7 @@ To get in you can run "requests" command`,
 	},
 }
 
-func downloadFile(id int, path string) error {
+func downloadFile(id int, _ string) error {
 	req, err := http.NewRequest(http.MethodGet, url+"/download/image/"+strconv.Itoa(id), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("download file: %w", err)
@@ -56,6 +57,21 @@ func downloadFile(id int, path string) error {
 		return fmt.Errorf("download file: %w", err)
 	}
 	defer resp.Body.Close()
+
+	values := resp.Header.Values("Content-Disposition")
+	fmt.Println(values)
+
+	var path string
+
+	reg := regexp.MustCompile(`filename=".*"`)
+
+	for _, val := range values {
+		loc := reg.FindStringIndex(val)
+		if loc != nil {
+			path = val[loc[0]+len(`filename="`) : loc[1]-1]
+			break
+		}
+	}
 
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, modeWriteReadExecute)
 	if err != nil {

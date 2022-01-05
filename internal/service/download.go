@@ -24,18 +24,19 @@ func NewDownload(repo DownloadRepo, stor Storager) *Download {
 
 // Download function returns the bytes of the image or (nil, err) if any error occurs.
 // Function gets the imageUrl using repo.GetImgaeURL and get it bytes using stor.GetFile.
-func (s *Download) DownloadImage(ctx context.Context, userID, imageID int) ([]byte, error) {
-	imageURL, err := s.repo.GetImageURL(ctx, userID, imageID)
+func (s *Download) DownloadImage(ctx context.Context,
+	userID, imageID int) (fileBytes []byte, imageURL string, err error) {
+	imageURL, err = s.repo.GetImageURL(ctx, userID, imageID)
 
 	if err != nil {
-		return nil, fmt.Errorf("download image: %w", err)
+		return nil, "", fmt.Errorf("download image: %w", err)
 	}
 
-	fileBytes, err := s.stor.GetFile(ctx, imageURL)
+	fileBytes, err = s.stor.GetFile(ctx, imageURL)
 
 	if err != nil {
-		return nil, fmt.Errorf("download image: %w", err)
+		return nil, "", fmt.Errorf("download image: %w", err)
 	}
 
-	return fileBytes, nil
+	return fileBytes, imageURL, nil
 }
