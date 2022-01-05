@@ -35,12 +35,13 @@ func (m *MockDownloader) EXPECT() *MockDownloaderMockRecorder {
 }
 
 // DownloadImage mocks base method.
-func (m *MockDownloader) DownloadImage(arg0 context.Context, arg1, arg2 int) ([]byte, error) {
+func (m *MockDownloader) DownloadImage(arg0 context.Context, arg1, arg2 int) ([]byte, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadImage", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // DownloadImage indicates an expected call of DownloadImage.

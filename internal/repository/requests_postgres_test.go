@@ -39,7 +39,7 @@ func RepoReturnID(id int) *sqlmock.Rows {
 var getRequestQuery = fmt.Sprintf(`SELECT id, op_status, request_time, completion_time, original_id,
 	 processed_id, ratio, original_type, processed_type FROM %s WHERE id = .+ and user_id = .+`, repository.RequestTable)
 
-func TestGetRequest(t *testing.T) {
+func TestReqPostgres_GetRequest(t *testing.T) {
 	testCases := []struct {
 		testName string
 		userID   int
@@ -123,7 +123,7 @@ var (
 	errAddingRequest = errors.New("error while adding reqeust")
 )
 
-func TestAddImageAndRequest(t *testing.T) {
+func TestReqPostgres_AddImageAndRequest(t *testing.T) {
 	testCases := []struct {
 		testName  string
 		userID    int
@@ -265,7 +265,7 @@ var delteRequestQuery = fmt.Sprintf(`DELETE FROM %s WHERE user_id = .+ AND id = 
 var deleteImageQuery = fmt.Sprintf(`DELETE FROM %s WHERE user_id = .+ AND id = .+
 		RETURNING image_url`, repository.ImageTable)
 
-func TestDeleteRequestAndImage(t *testing.T) {
+func TestReqPostgres_DeleteRequestAndImage(t *testing.T) {
 	testCases := []struct {
 		testName   string
 		userID     int

@@ -74,7 +74,7 @@ func (h *Handler) logTime(handler http.Handler) http.Handler {
 			"request path":    r.URL.Path,
 			"reqest method":   r.Method,
 			"time for answer": begin,
-		}).Info("get request")
+		}).Warn("get request")
 
 		handler.ServeHTTP(w, r)
 
@@ -82,6 +82,6 @@ func (h *Handler) logTime(handler http.Handler) http.Handler {
 			"request path":    r.URL.Path,
 			"reqest method":   r.Method,
 			"time for answer": time.Since(begin),
-		}).Info("request handled")
+		}).Warn("request handled")
 	})
 }

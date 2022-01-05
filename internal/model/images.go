@@ -24,9 +24,8 @@ type ConvImageInfo struct {
 	Ratio   float32
 }
 
-// ConverstionedImage is struct, which contains images and all needed
-// information to convert images.
-type ConverstionedImage struct {
+// RequestToProcess is struct, which contains request id and name of converted image.
+type RequestToProcess struct {
 	ReqID    int    `json:"reqID"`
 	FileName string `json:"fileName"`
 }

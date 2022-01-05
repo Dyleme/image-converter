@@ -11,7 +11,6 @@ import (
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/service"
 	"github.com/Dyleme/image-coverter/internal/service/mocks"
-	"github.com/Dyleme/image-coverter/internal/storage"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,7 +20,7 @@ var (
 	errStorage    = errors.New("error in storage")
 )
 
-func TestGetRequests(t *testing.T) {
+func TestRequest_GetRequests(t *testing.T) {
 	testCases := []struct {
 		testName string
 		userID   int
@@ -112,7 +111,7 @@ func TestGetRequests(t *testing.T) {
 	}
 }
 
-func TestGetRequest(t *testing.T) {
+func TestRequest_GetRequest(t *testing.T) {
 	testCases := []struct {
 		testName string
 		userID   int
@@ -192,7 +191,7 @@ func loadImage(t *testing.T, path string) []byte {
 	return b
 }
 
-func TestAddReqeust(t *testing.T) {
+func TestRequest_AddReqeust(t *testing.T) {
 	pngTestImage := loadImage(t, "test_data/x.png")
 
 	testCases := []struct {
@@ -255,12 +254,12 @@ func TestAddReqeust(t *testing.T) {
 				Ratio: 0.5,
 				Type:  "png",
 			},
-			storageErr:    storage.ErrBucketNotExist,
+			storageErr:    errStorage,
 			runUploadFile: true,
 			reqRepoErr:    nil,
 			repoReqID:     15,
 			wantReqID:     0,
-			wantErr:       storage.ErrBucketNotExist,
+			wantErr:       errStorage,
 		},
 	}
 	for _, tc := range testCases {
@@ -297,7 +296,7 @@ func TestAddReqeust(t *testing.T) {
 	}
 }
 
-func TestDeleteReqeust(t *testing.T) {
+func TestRequest_DeleteReqeust(t *testing.T) {
 	testCases := []struct {
 		testName string
 		userID   int

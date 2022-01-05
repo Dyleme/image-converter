@@ -44,7 +44,7 @@ var (
 	errUpdateStatus     = errors.New("repo update status error")
 )
 
-func TestAddImageDB(t *testing.T) {
+func TestConvPostgres_AddImageDB(t *testing.T) {
 	testCases := []struct {
 		testName string
 		userID   int
@@ -191,7 +191,7 @@ func TestAddImageDB(t *testing.T) {
 			mock = tc.initMock(mock, tc.userID, tc.reqID,
 				tc.imgInfo, tc.width, tc.height, tc.status, tc.time)
 
-			err := repo.AddImageDB(context.Background(), tc.userID, tc.reqID, tc.imgInfo,
+			err := repo.AddProcessedImage(context.Background(), tc.userID, tc.reqID, tc.imgInfo,
 				tc.width, tc.height, tc.status, tc.time)
 
 			assert.ErrorIs(t, err, tc.wantErr)

@@ -32,7 +32,7 @@ var createUserQuery = fmt.Sprintf(`INSERT INTO %s (nickname, email, password_has
 
 var errAlreadyExists = errors.New("such row already exists")
 
-func TestCreateUser(t *testing.T) {
+func TestAuthPostgres_CreateUser(t *testing.T) {
 	testCases := []struct {
 		testName string
 		user     model.User
@@ -95,7 +95,7 @@ func TestCreateUser(t *testing.T) {
 
 var getPasswrodAndIDQuery = fmt.Sprintf("SELECT password_hash, id FROM %s WHERE nickname = ?", repository.UsersTable)
 
-func TestGetPasswordAndID(t *testing.T) {
+func TestAuthPostgres_GetPasswordAndID(t *testing.T) {
 	testCases := []struct {
 		testName     string
 		userNickname string

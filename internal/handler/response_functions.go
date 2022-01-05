@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 // Struct to marshal error to the json.
@@ -40,7 +41,9 @@ func newJSONResponse(w http.ResponseWriter, v interface{}) {
 }
 
 // newDownloadFileResponse response with bytes of files as attachment to the response.
-func newDownloadFileResponse(w http.ResponseWriter, b []byte) {
+func newDownloadFileResponse(w http.ResponseWriter, b []byte, filename string) {
 	w.Header().Add("Content-Disposition", "Attachment")
+	w.Header().Add("Content-Disposition", `filename="`+filename+`"`)
+	w.Header().Add("Content-Length", strconv.Itoa(len(b)))
 	fmt.Fprint(w, string(b))
 }

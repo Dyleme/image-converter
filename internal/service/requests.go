@@ -29,7 +29,7 @@ type Request struct {
 
 // ImageProcesser is an interface which is provides method to save image to the repo.
 type ImageProcesser interface {
-	ProcessImage(ctx context.Context, data *model.ConverstionedImage)
+	ProcessImage(ctx context.Context, data *model.RequestToProcess) error
 }
 
 // NewRequest is a constructor to the RequestService.
@@ -114,12 +114,15 @@ func (s *Request) AddRequest(ctx context.Context, userID int, file io.Reader,
 		return 0, fmt.Errorf("repo add image and request: %w", err)
 	}
 
-	convertImageData := &model.ConverstionedImage{
+	convertImageData := &model.RequestToProcess{
 		ReqID:    reqID,
 		FileName: fileName,
 	}
 
-	s.processor.ProcessImage(ctx, convertImageData)
+	err = s.processor.ProcessImage(ctx, convertImageData)
+	if err != nil {
+		return 0, fmt.Errorf("prcoess image: %w", err)
+	}
 
 	return reqID, nil
 }
