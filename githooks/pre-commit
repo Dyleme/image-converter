@@ -1,0 +1,35 @@
+#!/bin/sh
+NORMAL=$(tput sgr0)
+MAGENTA=$(tput setaf 5)
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+
+GOLANGCI_LINT=$GOPATH/bin/golangci-lint
+
+# Check for golangci-lint
+if [[ ! -x "$GOLANGCI_LINT" ]]; then
+  printf "\t\033[41mPlease install golangci-lint (go get -u github.com/golangci/golangci-lint/cmd/golangci-lint)"
+  exit 1
+fi
+
+
+printf "${MAGENTA}Running golangci-lint${NORMAL}\n"
+
+golangci-lint run
+if [[ $? != 0 ]]; then
+  printf "${RED}Linting failed! ${NORMAL}Please fix errors before committing.\n"
+  exit 1
+else
+ printf "${GREEN}Linting passed! ${NORMAL}Continuing to commit.\n"
+fi
+
+printf "${MAGENTA}Running go test${NORMAL}\n"
+
+make test.full
+if [[ $? != 0 ]]; then
+  printf "${RED}Testing failed! ${NORMAL}Please fix errors before committing.\n"
+  exit 1
+else
+ printf "${GREEN}Testing passed! ${NORMAL}Continuing to commit.\n"
+fi
+
