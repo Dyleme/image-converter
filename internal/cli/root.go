@@ -1,12 +1,21 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
 var url = "http://localhost:8080"
+
+type WrongStatusError struct {
+	Status int
+}
+
+func (e WrongStatusError) Error() string {
+	return fmt.Sprintf("error response status: %v", e.Status)
+}
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
