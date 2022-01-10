@@ -21,6 +21,9 @@ jobs:
 
     - name: Test
       run: make test.full
+      env:
+        POSTGRES_HOST: postgres
+        POSTGRES_PORT: 5432
 
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v2.5.2
