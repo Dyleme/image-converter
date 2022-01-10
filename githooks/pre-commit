@@ -25,7 +25,7 @@ fi
 
 printf "${MAGENTA}Running go test${NORMAL}\n"
 
-go test ./...
+make test.full
 if [[ $? != 0 ]]; then
   printf "${RED}Testing failed! ${NORMAL}Please fix errors before committing.\n"
   exit 1

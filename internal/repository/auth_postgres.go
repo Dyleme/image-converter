@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/Dyleme/image-coverter/internal/model"
+	"github.com/lib/pq"
 )
 
 // AuthPostgres is a struct that provide methods to create and get information about user from sql.DB.
@@ -21,6 +22,8 @@ func NewAuthPostgres(db *sql.DB) *AuthPostgres {
 
 var ErrUserNotExist = errors.New("such user not exist")
 
+var ErrDuplicatedNickname = errors.New("user with this nickname already exists")
+
 // CreateUser method creates user in database. And returns the id of the user.
 func (r *AuthPostgres) CreateUser(ctx context.Context, user model.User) (int, error) {
 	query := fmt.Sprintf("INSERT INTO %s (nickname, email, password_hash) VALUES ($1, $2, $3) RETURNING id", UsersTable)
@@ -28,6 +31,11 @@ func (r *AuthPostgres) CreateUser(ctx context.Context, user model.User) (int, er
 
 	var id int
 	if err := row.Scan(&id); err != nil {
+		var pgErr pq.Error
+		if errors.As(err, &pgErr) && pgErr.Code == "230505" {
+			return 0, ErrDuplicatedNickname
+		}
+
 		return 0, fmt.Errorf("repo: %w", err)
 	}
 

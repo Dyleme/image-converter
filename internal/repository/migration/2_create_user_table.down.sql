@@ -1,0 +1,1 @@
+DELETE from users where id = 1 or id = 2;
