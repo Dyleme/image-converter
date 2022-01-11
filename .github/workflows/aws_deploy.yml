@@ -47,26 +47,13 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Extract metadata (tags, labels) for handler Docker
-      id: handler_meta
-      uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-      with:
-        images: ${{ env.HANDLER_IMAGE }} 
-
     - name: Build and push Docker handler image
       uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
       with:
         context: .
         file: ./Dockerfile.conv
         push: true
-        tags: ${{ steps.handler_meta.outputs.tags }}
-        labels: ${{ steps.handler_meta.outputs.labels }}
-
-    - name: Extract metadata (tags, labels) for converter Docker
-      id: conv_meta
-      uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-      with:
-        images: ${{ env.CONV_IMAGE }} 
+        tags: dyleme/handler:latest
 
     - name: Build and push Docker converter image
       uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
@@ -74,9 +61,7 @@ jobs:
         context: .
         file: ./Dockerfile.conv
         push: true
-        tags: ${{ steps.conv_meta.outputs.tags }}
-        labels: ${{ steps.conv_meta.outputs.labels }}
-
+        tags: dyleme/converter:latest
 
     - name: Fill in the new handler image ID in the Amazon ECS task definition
       id: handler-task-def
