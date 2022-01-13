@@ -132,6 +132,13 @@ loop:
 	for {
 		select {
 		case d := <-msgs:
+			defer func() {
+				err := d.Ack(false)
+				if err != nil {
+					logger.Warn(err)
+				}
+			}()
+
 			logger.Debug("get conversion reqeust")
 
 			var data model.RequestToProcess
@@ -139,6 +146,7 @@ loop:
 			err := json.Unmarshal(d.Body, &data)
 			if err != nil {
 				logger.Warn("Umarshaling error")
+				continue
 			}
 
 			convBegin := time.Now()
@@ -146,10 +154,16 @@ loop:
 			err = conv.Convert(logging.WithLogger(context.TODO(), logger), data.ReqID, data.FileName)
 			if err != nil {
 				logger.Warnf("receive: %s", err)
+				continue
 			}
 
 			logger.WithField("time for conversion", time.Since(convBegin)).
 				Debug("conversion ends")
+
+			err = d.Ack(true)
+			if err != nil {
+				logger.Warn(err)
+			}
 
 		case <-ctx.Done():
 			break loop
@@ -189,7 +203,7 @@ func createConnectionAndQueue(conn *amqp.Connection) (<-chan amqp.Delivery, erro
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		false,  // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
