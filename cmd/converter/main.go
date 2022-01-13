@@ -6,7 +6,6 @@ import (
 	"os/signal"
 
 	_ "github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 
 	"github.com/Dyleme/image-coverter/internal/config"
 	"github.com/Dyleme/image-coverter/internal/logging"
@@ -17,9 +16,9 @@ import (
 )
 
 func main() {
-	logger := logging.NewLogger(logrus.DebugLevel)
-
 	conf, err := config.InitConfig()
+	logger := logging.NewLogger(conf.LogLevel)
+
 	if err != nil {
 		logger.Fatal("wrong config: %w", err)
 	}
