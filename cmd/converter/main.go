@@ -8,6 +8,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/Dyleme/image-coverter/internal/config"
+	"github.com/Dyleme/image-coverter/internal/conversion"
 	"github.com/Dyleme/image-coverter/internal/logging"
 	"github.com/Dyleme/image-coverter/internal/rabbitmq"
 	"github.com/Dyleme/image-coverter/internal/repository"
@@ -37,7 +38,7 @@ func main() {
 		logger.Fatalf("failed to initialize storage: %s", err)
 	}
 
-	convService := service.NewConvertRequest(convRep, stor)
+	convService := service.NewConvertRequest(convRep, stor, &conversion.Convert{})
 
 	c := make(chan os.Signal, 1)
 

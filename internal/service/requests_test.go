@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
@@ -180,24 +179,12 @@ func TestRequest_GetRequest(t *testing.T) {
 	}
 }
 
-func loadImage(t *testing.T, path string) []byte {
-	t.Helper()
-
-	b, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening an image", err)
-	}
-
-	return b
-}
-
 func TestRequest_AddReqeust(t *testing.T) {
-	pngTestImage := loadImage(t, "test_data/x.png")
-
+	pngTestImage := []byte{1, 2, 3, 4, 5}
 	testCases := []struct {
 		testName        string
 		userID          int
-		file            *bytes.Buffer
+		file            []byte
 		fileName        string
 		imageID         int
 		imageRepoErr    error
@@ -216,7 +203,7 @@ func TestRequest_AddReqeust(t *testing.T) {
 		{
 			testName: "all is good",
 			userID:   123,
-			file:     bytes.NewBuffer(pngTestImage),
+			file:     pngTestImage,
 			fileName: "filename.png",
 			convInfo: model.ConversionInfo{
 				Ratio: 0.5,
@@ -234,7 +221,7 @@ func TestRequest_AddReqeust(t *testing.T) {
 		{
 			testName: "unknow file type",
 			userID:   123,
-			file:     bytes.NewBuffer(pngTestImage),
+			file:     pngTestImage,
 			fileName: "filename.webm",
 			convInfo: model.ConversionInfo{
 				Ratio: 0.5,
@@ -248,7 +235,7 @@ func TestRequest_AddReqeust(t *testing.T) {
 		{
 			testName: "storage error",
 			userID:   123,
-			file:     bytes.NewBuffer(pngTestImage),
+			file:     pngTestImage,
 			fileName: "filename.png",
 			convInfo: model.ConversionInfo{
 				Ratio: 0.5,
@@ -262,6 +249,7 @@ func TestRequest_AddReqeust(t *testing.T) {
 			wantErr:       errStorage,
 		},
 	}
+
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			mockCtr := gomock.NewController(t)
@@ -274,7 +262,7 @@ func TestRequest_AddReqeust(t *testing.T) {
 			ctx := context.Background()
 
 			if tc.runUploadFile {
-				mockStorage.EXPECT().UploadFile(ctx, tc.userID, tc.fileName, tc.file.Bytes()).Return(tc.imageURL, tc.storageErr)
+				mockStorage.EXPECT().UploadFile(ctx, tc.userID, tc.fileName, tc.file).Return(tc.imageURL, tc.storageErr)
 			}
 
 			if tc.runAddImage {
@@ -287,7 +275,7 @@ func TestRequest_AddReqeust(t *testing.T) {
 				mockProcess.EXPECT().ProcessImage(ctx, gomock.Any())
 			}
 
-			gotReqID, gotErr := srvc.AddRequest(ctx, tc.userID, tc.file,
+			gotReqID, gotErr := srvc.AddRequest(ctx, tc.userID, bytes.NewBuffer(tc.file),
 				tc.fileName, tc.convInfo)
 
 			assert.ErrorIs(t, gotErr, tc.wantErr)
