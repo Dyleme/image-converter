@@ -3,7 +3,6 @@ package service
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -38,15 +37,6 @@ type UnsupportedTypeError struct {
 
 func (e UnsupportedTypeError) Error() string {
 	return fmt.Sprintf("unsupported type: %q", e.UnType)
-}
-
-func (e UnsupportedTypeError) Is(target error) bool {
-	u := &UnsupportedTypeError{}
-	if errors.As(target, &u) {
-		return u.UnType == e.UnType
-	}
-
-	return false
 }
 
 // decodeImage decodes image from the r.
