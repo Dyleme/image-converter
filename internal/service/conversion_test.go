@@ -14,7 +14,7 @@ import (
 
 const (
 	originalImageURL  = "./test_data/x.png"
-	convertedImageURL = "./test_data/x.png"
+	convertedImageURL = "./test_data/xconv.png"
 )
 
 func TestConvertRequest_Convert(t *testing.T) {
