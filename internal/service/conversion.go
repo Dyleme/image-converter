@@ -7,7 +7,6 @@ import (
 	"image"
 	"time"
 
-	"github.com/Dyleme/image-coverter/internal/conversion"
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/repository"
 )
@@ -22,10 +21,11 @@ type ConvertRepo interface {
 type ConvertRequest struct {
 	repo    ConvertRepo
 	storage Storager
+	resizer Resizer
 }
 
-func NewConvertRequest(repo ConvertRepo, stor Storager) *ConvertRequest {
-	return &ConvertRequest{repo: repo, storage: stor}
+func NewConvertRequest(repo ConvertRepo, stor Storager, resizer Resizer) *ConvertRequest {
+	return &ConvertRequest{repo: repo, storage: stor, resizer: resizer}
 }
 
 func (c *ConvertRequest) Convert(ctx context.Context, reqID int, filename string) error {
@@ -47,7 +47,7 @@ func (c *ConvertRequest) Convert(ctx context.Context, reqID int, filename string
 	}
 
 	if info.Ratio != 1 {
-		img = conversion.Resize(img, info.Ratio)
+		img = c.resizer.Resize(img, info.Ratio)
 	}
 
 	bts, err := encodeImage(img, info.NewType)

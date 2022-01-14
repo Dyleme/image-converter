@@ -88,3 +88,7 @@ func encodeImage(i image.Image, imgType string) ([]byte, error) {
 
 	return bf.Bytes(), nil
 }
+
+type Resizer interface {
+	Resize(im image.Image, ratio float32) image.Image
+}

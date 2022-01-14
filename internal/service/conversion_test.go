@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Dyleme/image-coverter/internal/conversion"
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/repository"
 	"github.com/Dyleme/image-coverter/internal/service"
@@ -189,7 +190,7 @@ func TestConvertRequest_Convert(t *testing.T) {
 
 			tc.configure(storMock, convRepoMock)
 
-			conv := service.NewConvertRequest(convRepoMock, storMock)
+			conv := service.NewConvertRequest(convRepoMock, storMock, &conversion.Convert{})
 
 			gotErr := conv.Convert(context.Background(), tc.reqID, tc.filename)
 			assert.ErrorIs(t, gotErr, tc.wantErr)
