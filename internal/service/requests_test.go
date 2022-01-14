@@ -249,6 +249,7 @@ func TestRequest_AddReqeust(t *testing.T) {
 			wantErr:       errStorage,
 		},
 	}
+
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			mockCtr := gomock.NewController(t)
