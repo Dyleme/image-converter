@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/Dyleme/image-coverter/internal/conversion"
@@ -17,6 +18,17 @@ const (
 	originalImageURL  = "./test_data/x.png"
 	convertedImageURL = "./test_data/xconv.png"
 )
+
+func loadImage(t *testing.T, path string) []byte {
+	t.Helper()
+
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening an image", err)
+	}
+
+	return b
+}
 
 func TestConvertRequest_Convert(t *testing.T) {
 	testCases := []struct {
