@@ -17,6 +17,7 @@ type CollectiveConfig struct {
 	JWT           *jwt.Config
 	AWS           *aws.Config
 	AwsBucketName string
+	LogLevel      string // string names from logrus.
 	Port          string
 }
 
@@ -49,6 +50,8 @@ func InitConfig() (*CollectiveConfig, error) {
 
 	port := os.Getenv("PORT")
 
+	logLvl := os.Getenv("LOGLEVEL")
+
 	awsBucketName := os.Getenv("AWS_BUCKET_NAME")
 	awsConfig := &aws.Config{
 		Region: aws.String(os.Getenv("AWS_REGION")),
@@ -66,5 +69,6 @@ func InitConfig() (*CollectiveConfig, error) {
 		Port:          port,
 		AWS:           awsConfig,
 		AwsBucketName: awsBucketName,
+		LogLevel:      logLvl,
 	}, nil
 }
