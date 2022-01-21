@@ -34,6 +34,15 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v2.5.2
+      with:
+        version: latest
+        skip-go-installation: true
+
+    - name: Run tests
+      run: make test.full
+
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
