@@ -10,18 +10,22 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
+// Key structure to add value in context.
 type Key string
 
+// Gen is a structure to generate JWT tokens.
 type Gen struct {
 	signedKey string
 	ttl       time.Duration
 }
 
+// Config is a config to initialize JWT gen.
 type Config struct {
 	SignedKey string
 	TTL       time.Duration
 }
 
+// NewJwtGen is a constructor to Gen.
 func NewJwtGen(config *Config) *Gen {
 	return &Gen{signedKey: config.SignedKey}
 }
@@ -47,7 +51,7 @@ type tokenClaims struct {
 	UserID int `json:"userID"`
 }
 
-// CreateToken function generate token with provided TTL and user id.
+// CreateToken method generate token with provided TTL and user id.
 func (g *Gen) CreateToken(_ context.Context, id int) (string, error) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		jwt.StandardClaims{
@@ -60,7 +64,7 @@ func (g *Gen) CreateToken(_ context.Context, id int) (string, error) {
 	return jwtToken.SignedString([]byte(g.signedKey))
 }
 
-// ParseToken function rerurns user id from JWT token, if this token is liquid.
+// ParseToken function returns user id from JWT token, if this token is liquid.
 func (g *Gen) ParseToken(_ context.Context, tokenString string) (int, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {

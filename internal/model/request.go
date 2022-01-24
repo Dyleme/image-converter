@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Sruct to put it in requests database.
+// Struct to put it in requests database.
 type Request struct {
 	ID             int       `json:"id"`
 	OpStatus       string    `json:"status"`

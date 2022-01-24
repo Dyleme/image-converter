@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
+// CollectiveConfig is a struct which contains configs for all needed constructors.
 type CollectiveConfig struct {
 	DB            *repository.DBConfig
 	RabbitMQ      *rabbitmq.Config
@@ -21,6 +22,7 @@ type CollectiveConfig struct {
 	Port          string
 }
 
+// InitConfig is a function which create and initialize CollectiveConfig.
 func InitConfig() (*CollectiveConfig, error) {
 	db := &repository.DBConfig{
 		UserName: os.Getenv("DBUSERNAME"),
