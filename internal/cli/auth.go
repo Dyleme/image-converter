@@ -14,7 +14,7 @@ type jwtToken struct {
 	Token string `json:"jwt"`
 }
 
-const fileFlag = 0755
+const fileFlag = 0o755
 
 func credentialsFromFile(filePath string) ([]byte, error) {
 	file, err := os.Open(filePath)
@@ -107,8 +107,7 @@ func auth(r *http.Request) error {
 func getToken(b []byte) (string, error) {
 	jwt := jwtToken{}
 
-	err := json.Unmarshal(b, &jwt)
-	if err != nil {
+	if err := json.Unmarshal(b, &jwt); err != nil {
 		return "", fmt.Errorf("get token: %w", err)
 	}
 
