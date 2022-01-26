@@ -14,6 +14,8 @@ type jwtToken struct {
 	Token string `json:"jwt"`
 }
 
+const fileFlag = 0755
+
 func credentialsFromFile(filePath string) ([]byte, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -52,7 +54,8 @@ func saveJWT(b []byte) error {
 	if err != nil {
 		return fmt.Errorf("save jwt: %w", err)
 	}
-	file, err := os.OpenFile(dir+pathToJWT, os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0755)
+
+	file, err := os.OpenFile(dir+pathToJWT, os.O_TRUNC|os.O_CREATE|os.O_RDWR, fileFlag)
 	if err != nil {
 		return fmt.Errorf("save jwt: %w", err)
 	}
@@ -80,6 +83,7 @@ func auth(r *http.Request) error {
 	if err != nil {
 		return fmt.Errorf("save jwt: %w", err)
 	}
+
 	file, err := os.OpenFile(dir+pathToJWT, 0, os.ModeType)
 	if err != nil {
 		return fmt.Errorf("auth: %w", err)
@@ -111,5 +115,6 @@ func getToken(b []byte) (string, error) {
 	if jwt.Token == "" {
 		return "", fmt.Errorf("invalid password")
 	}
+
 	return jwt.Token, nil
 }
