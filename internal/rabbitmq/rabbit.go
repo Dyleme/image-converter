@@ -132,13 +132,6 @@ loop:
 	for {
 		select {
 		case d := <-msgs:
-			defer func() {
-				err := d.Ack(false)
-				if err != nil {
-					logger.Warn(err)
-				}
-			}()
-
 			logger.Debug("get conversion reqeust")
 
 			var data model.RequestToProcess
@@ -159,11 +152,6 @@ loop:
 
 			logger.WithField("time for conversion", time.Since(convBegin)).
 				Debug("conversion ends")
-
-			err = d.Ack(true)
-			if err != nil {
-				logger.Warn(err)
-			}
 
 		case <-ctx.Done():
 			break loop
@@ -203,7 +191,7 @@ func createConnectionAndQueue(conn *amqp.Connection) (<-chan amqp.Delivery, erro
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		false,  // auto-ack
+		true,   // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
