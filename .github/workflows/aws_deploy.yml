@@ -14,8 +14,8 @@ env:
   HANDLER_IMAGE: dyleme/handler
   CONV_IMAGE: dyleme/converter
 
-  ECS_HANDLER_SERVICE: service-handler
-  ECS_CONV_SERVICE: service-convert
+  ECS_HANDLER_SERVICE: dziauho-converter-service
+  ECS_CONV_SERVICE: dziauho-converter-conv-service 
   ECS_CLUSTER: image-converter-dziauho
 
   ECS_HANDLER_TASK_DEFINITION: .aws/handler-task-definition.json 
