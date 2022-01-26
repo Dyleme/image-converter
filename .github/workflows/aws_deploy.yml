@@ -16,7 +16,7 @@ env:
 
   ECS_HANDLER_SERVICE: dziauho-converter-service
   ECS_CONV_SERVICE: dziauho-converter-conv-service 
-  ECS_CLUSTER: image-converter-dziauho
+  ECS_CLUSTER: dziauho-image-converter
 
   ECS_HANDLER_TASK_DEFINITION: .aws/handler-task-definition.json 
   ECS_CONV_TASK_DEFINITION: .aws/conv-task-definition.json 
