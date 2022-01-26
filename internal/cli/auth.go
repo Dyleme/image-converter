@@ -10,6 +10,10 @@ import (
 	"github.com/Dyleme/image-coverter/internal/model"
 )
 
+type jwtToken struct {
+	Token string `json:"jwt"`
+}
+
 func credentialsFromFile(filePath string) ([]byte, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -41,8 +45,14 @@ func credentialsFromArgs(nickname, password, email string) ([]byte, error) {
 	return js, nil
 }
 
+const pathToJWT = "/../../.token/.jwt"
+
 func saveJWT(b []byte) error {
-	file, err := os.OpenFile(".jwt", os.O_TRUNC|os.O_CREATE, os.ModeTemporary)
+	dir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("save jwt: %w", err)
+	}
+	file, err := os.OpenFile(dir+pathToJWT, os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0755)
 	if err != nil {
 		return fmt.Errorf("save jwt: %w", err)
 	}
@@ -66,7 +76,11 @@ const (
 )
 
 func auth(r *http.Request) error {
-	file, err := os.OpenFile(".jwt", 0, os.ModeType)
+	dir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("save jwt: %w", err)
+	}
+	file, err := os.OpenFile(dir+pathToJWT, 0, os.ModeType)
 	if err != nil {
 		return fmt.Errorf("auth: %w", err)
 	}
@@ -76,16 +90,26 @@ func auth(r *http.Request) error {
 		return fmt.Errorf("auth: %w", err)
 	}
 
-	jwt := struct {
-		Token string `json:"jwt"`
-	}{}
-
-	err = json.Unmarshal(b, &jwt)
+	token, err := getToken(b)
 	if err != nil {
 		return fmt.Errorf("auth: %w", err)
 	}
 
-	r.Header.Add(AuthorizationHeader, BearerToken+" "+jwt.Token)
+	r.Header.Add(AuthorizationHeader, BearerToken+" "+token)
 
 	return nil
+}
+
+func getToken(b []byte) (string, error) {
+	jwt := jwtToken{}
+
+	err := json.Unmarshal(b, &jwt)
+	if err != nil {
+		return "", fmt.Errorf("get token: %w", err)
+	}
+
+	if jwt.Token == "" {
+		return "", fmt.Errorf("invalid password")
+	}
+	return jwt.Token, nil
 }

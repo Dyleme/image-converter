@@ -62,6 +62,11 @@ var loginCmd = &cobra.Command{
 			return err
 		}
 
+		_, err = getToken(b)
+		if err != nil {
+			return err
+		}
+
 		err = saveJWT(b)
 		if err != nil {
 			return err
