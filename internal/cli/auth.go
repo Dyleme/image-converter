@@ -69,7 +69,12 @@ func saveJWT(b []byte) error {
 }
 
 func deleteJWT() error {
-	return os.Remove(".jwt")
+	dir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("save jwt: %w", err)
+	}
+
+	return os.Remove(dir + pathToJWT)
 }
 
 const (

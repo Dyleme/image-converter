@@ -59,11 +59,15 @@ func downloadFile(id int, _ string) error {
 	defer resp.Body.Close()
 
 	values := resp.Header.Values("Content-Disposition")
-	fmt.Println(values)
 
-	var path string
+	dir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("download file: %w", err)
+	}
 
 	reg := regexp.MustCompile(`filename=".*"`)
+
+	var path string
 
 	for _, val := range values {
 		loc := reg.FindStringIndex(val)
@@ -73,7 +77,7 @@ func downloadFile(id int, _ string) error {
 		}
 	}
 
-	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, modeWriteReadExecute)
+	file, err := os.OpenFile(dir+"/../../"+path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, modeWriteReadExecute)
 	if err != nil {
 		return fmt.Errorf("download file: %w", err)
 	}
