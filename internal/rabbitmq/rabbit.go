@@ -127,6 +127,7 @@ func Receive(ctx context.Context, conv Converter, conf *Config) error {
 	}
 
 	logger.Info("start conversion server")
+	logger.Info("start receiving")
 
 loop:
 	for {
