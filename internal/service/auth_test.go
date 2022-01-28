@@ -136,9 +136,8 @@ func TestAuth_ValidateUser(t *testing.T) {
 			repoPsswrd: []byte("321"),
 			repoError:  nil,
 			wantJwt:    "",
-			wantError:  service.ErrWrongPassword,
-		},
-		{
+			wantError:  service.WrongPasswordError{service.RespStatus{StatusCode: 409}},
+		}, {
 			testName: "Token creation error",
 			user: model.User{
 				Nickname: "Alike",

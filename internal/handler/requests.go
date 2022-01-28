@@ -100,7 +100,7 @@ func (rh *Request) AddRequest(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		rh.logger.Warn(err)
-		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+		newUnknownErrorResponse(w, err)
 
 		return
 	}
@@ -151,7 +151,7 @@ func (rh *Request) GetRequest(w http.ResponseWriter, r *http.Request) {
 	request, err := rh.requestService.GetRequest(ctx, userID, reqID)
 	if err != nil {
 		rh.logger.Warn(err)
-		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+		newUnknownErrorResponse(w, err)
 
 		return
 	}
@@ -196,7 +196,7 @@ func (rh *Request) DeleteRequest(w http.ResponseWriter, r *http.Request) {
 	err = rh.requestService.DeleteRequest(ctx, userID, reqID)
 	if err != nil {
 		rh.logger.Warn(err)
-		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+		newUnknownErrorResponse(w, err)
 
 		return
 	}

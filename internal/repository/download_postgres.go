@@ -3,8 +3,19 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 )
+
+type ImageNotExistError struct{}
+
+func (ImageNotExistError) Error() string {
+	return "such image not exist"
+}
+
+func (ImageNotExistError) Subject() string {
+	return "image"
+}
 
 // DownloadPostgres is a struct that provide method to get image url from the sql.DB.
 type DownloadPostgres struct {
@@ -23,7 +34,13 @@ func (d *DownloadPostgres) GetImageURL(ctx context.Context, userID, imageID int)
 
 	var urlImage string
 
-	if err := row.Scan(&urlImage); err != nil {
+	err := row.Scan(&urlImage)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", fmt.Errorf("repo: %w", ImageNotExistError{})
+	}
+
+	if err != nil {
 		return "", fmt.Errorf("repo: %w", err)
 	}
 

@@ -2,7 +2,6 @@ package repository_test
 
 import (
 	"context"
-	"database/sql"
 	"log"
 	"testing"
 
@@ -77,7 +76,7 @@ func (p *PostgresAuthTest) TestGet() {
 			name:         "not exist",
 			wantPassword: "",
 			wantID:       0,
-			wantErr:      sql.ErrNoRows,
+			wantErr:      repository.UserNotExistError{},
 		},
 	}
 
@@ -117,7 +116,7 @@ func (p *PostgresAuthTest) TestCreateUser() {
 				Password: "password",
 			},
 			wantID:  0,
-			wantErr: repository.ErrDuplicatedNickname,
+			wantErr: repository.DuplicatedNicknameError{},
 		},
 	}
 

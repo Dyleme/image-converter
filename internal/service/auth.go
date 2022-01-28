@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/Dyleme/image-coverter/internal/model"
 	"golang.org/x/crypto/bcrypt"
@@ -64,10 +65,27 @@ func NewAuth(repo AuthRepo, hashGen HashGenerator, jwtGen JwtGenerator) *Auth {
 // Function get password hash of the user and creates user and calls CreateUser method of repository.
 func (s *Auth) CreateUser(ctx context.Context, user model.User) (int, error) {
 	user.Password = s.hashGen.GeneratePasswordHash(user.Password)
-	return s.repo.CreateUser(ctx, user)
+
+	id, err := s.repo.CreateUser(ctx, user)
+	if err != nil {
+		var expErr ExpectedError
+		if errors.As(err, &expErr) {
+			return 0, SomeError{RespStatus{StatusCode: http.StatusConflict}, err}
+		}
+
+		return 0, fmt.Errorf("create user: %w", err)
+	}
+
+	return id, nil
 }
 
-var ErrWrongPassword = errors.New("wrong password")
+type WrongPasswordError struct {
+	RespStatus
+}
+
+func (WrongPasswordError) Error() string {
+	return "wrong password"
+}
 
 // ValidateUser returns the jwt token of the user, if the provided user exists  in repo and password is correct.
 // In any other sitationds function returns ("", err).
@@ -76,11 +94,16 @@ var ErrWrongPassword = errors.New("wrong password")
 func (s *Auth) ValidateUser(ctx context.Context, user model.User) (string, error) {
 	hash, id, err := s.repo.GetPasswordHashAndID(ctx, user.Nickname)
 	if err != nil {
-		return "", fmt.Errorf("validate user %w", err)
+		var expErr ExpectedError
+		if errors.As(err, &expErr) {
+			return "", SomeError{RespStatus{StatusCode: http.StatusBadRequest}, err}
+		}
+
+		return "", fmt.Errorf("validate user: %w", err)
 	}
 
 	if !s.hashGen.IsValidPassword(user.Password, hash) {
-		return "", ErrWrongPassword
+		return "", WrongPasswordError{RespStatus{StatusCode: http.StatusUnauthorized}}
 	}
 
 	return s.jwtGen.CreateToken(ctx, id)

@@ -39,6 +39,24 @@ func (e UnsupportedTypeError) Error() string {
 	return fmt.Sprintf("unsupported type: %q", e.UnType)
 }
 
+type RespStatus struct {
+	StatusCode int
+}
+
+func (rs RespStatus) Status() int {
+	return rs.StatusCode
+}
+
+type SomeError struct {
+	RespStatus
+	error
+}
+
+type ExpectedError interface {
+	error
+	Subject() string
+}
+
 // decodeImage decodes image from the r.
 // Decoding supports only jpeg and png types.
 func decodeImage(r io.Reader, imgType string) (image.Image, error) {

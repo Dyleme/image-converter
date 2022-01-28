@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 )
 
 // Download is an interface that provide method gets the image url from the repositoury.
@@ -29,6 +31,11 @@ func (s *Download) DownloadImage(ctx context.Context,
 	imageURL, err = s.repo.GetImageURL(ctx, userID, imageID)
 
 	if err != nil {
+		var expErr ExpectedError
+		if errors.As(err, &expErr) {
+			return nil, "", SomeError{RespStatus{StatusCode: http.StatusBadRequest}, err}
+		}
+
 		return nil, "", fmt.Errorf("download image: %w", err)
 	}
 

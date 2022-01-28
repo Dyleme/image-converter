@@ -3,7 +3,6 @@ package repository_test
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"regexp"
 	"testing"
@@ -11,6 +10,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/repository"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,8 +29,6 @@ func NewAuthMock(t *testing.T) (*repository.AuthPostgres, sqlmock.Sqlmock) {
 
 var createUserQuery = fmt.Sprintf(`INSERT INTO %s (nickname, email, password_hash)
 	 VALUES ($1, $2, $3) RETURNING id`, repository.UsersTable)
-
-var errAlreadyExists = errors.New("such row already exists")
 
 func TestAuthPostgres_CreateUser(t *testing.T) {
 	testCases := []struct {
@@ -66,12 +64,12 @@ func TestAuthPostgres_CreateUser(t *testing.T) {
 			},
 			initMock: func(mock sqlmock.Sqlmock, user *model.User) sqlmock.Sqlmock {
 				mock.ExpectQuery(regexp.QuoteMeta(createUserQuery)).WithArgs(user.Nickname, user.Email, user.Password).
-					WillReturnError(errAlreadyExists)
+					WillReturnError(&pq.Error{Code: "23505"})
 
 				return mock
 			},
 			wantID:  0,
-			wantErr: errAlreadyExists,
+			wantErr: repository.DuplicatedNicknameError{},
 		},
 	}
 
@@ -131,7 +129,7 @@ func TestAuthPostgres_GetPasswordAndID(t *testing.T) {
 			},
 			wantID:       0,
 			wantPassword: nil,
-			wantErr:      sql.ErrNoRows,
+			wantErr:      repository.UserNotExistError{},
 		},
 	}
 

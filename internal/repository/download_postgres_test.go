@@ -2,7 +2,6 @@ package repository_test
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"testing"
 
@@ -34,7 +33,7 @@ func TestDownloadPostgres_GetImageUrl(t *testing.T) {
 			imageID:  19,
 			repoURL:  "",
 			wantURL:  "",
-			wantErr:  sql.ErrNoRows,
+			wantErr:  repository.ImageNotExistError{},
 		},
 	}
 

@@ -60,7 +60,7 @@ func (ah *Auth) Login(w http.ResponseWriter, r *http.Request) {
 
 	jwtToken, err := ah.authService.ValidateUser(ctx, input)
 	if err != nil {
-		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+		newUnknownErrorResponse(w, err)
 		ah.logger.Warn(err)
 
 		return
@@ -101,7 +101,7 @@ func (ah *Auth) Register(w http.ResponseWriter, r *http.Request) {
 	id, err := ah.authService.CreateUser(ctx, input)
 	if err != nil {
 		ah.logger.Warn(err)
-		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+		newUnknownErrorResponse(w, err)
 
 		return
 	}

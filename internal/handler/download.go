@@ -62,7 +62,7 @@ func (dh *Download) DownloadImage(w http.ResponseWriter, r *http.Request) {
 	b, filename, err := dh.downloadService.DownloadImage(ctx, userID, imageID)
 	if err != nil {
 		dh.logger.Warn(err)
-		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+		newUnknownErrorResponse(w, err)
 
 		return
 	}

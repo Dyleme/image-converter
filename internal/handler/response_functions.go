@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,6 +11,15 @@ import (
 // Struct to marshal error to the json.
 type errorResponse struct {
 	Message string `json:"message"`
+}
+
+func newUnknownErrorResponse(w http.ResponseWriter, err error) {
+	var statErr ErrorWithStatus
+	if errors.As(err, &statErr) {
+		newErrorResponse(w, statErr.Status(), err.Error())
+	} else {
+		newErrorResponse(w, http.StatusInternalServerError, err.Error())
+	}
 }
 
 // newErrorResponse functiton respnonse with the json representing the error.

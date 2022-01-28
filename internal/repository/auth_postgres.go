@@ -20,9 +20,25 @@ func NewAuthPostgres(db *sql.DB) *AuthPostgres {
 	return &AuthPostgres{db: db}
 }
 
-var ErrUserNotExist = errors.New("such user not exist")
+type UserNotExistError struct{}
 
-var ErrDuplicatedNickname = errors.New("user with this nickname already exists")
+func (UserNotExistError) Error() string {
+	return "such user not exist"
+}
+
+func (UserNotExistError) Subject() string {
+	return "user"
+}
+
+type DuplicatedNicknameError struct{}
+
+func (DuplicatedNicknameError) Error() string {
+	return "user with this nickname already exists"
+}
+
+func (DuplicatedNicknameError) Subject() string {
+	return "user"
+}
 
 // CreateUser method creates user in database. And returns the id of the user.
 func (r *AuthPostgres) CreateUser(ctx context.Context, user model.User) (int, error) {
@@ -31,9 +47,9 @@ func (r *AuthPostgres) CreateUser(ctx context.Context, user model.User) (int, er
 
 	var id int
 	if err := row.Scan(&id); err != nil {
-		var pgErr pq.Error
-		if errors.As(err, &pgErr) && pgErr.Code == "230505" {
-			return 0, ErrDuplicatedNickname
+		var pgErr *pq.Error
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return 0, DuplicatedNicknameError{}
 		}
 
 		return 0, fmt.Errorf("repo: %w", err)
@@ -49,8 +65,8 @@ func (r *AuthPostgres) GetPasswordHashAndID(ctx context.Context, nickname string
 
 	err = row.Scan(&hash, &userID)
 
-	if errors.Is(err, ErrUserNotExist) {
-		return nil, 0, fmt.Errorf("repo: %w", ErrUserNotExist)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, 0, fmt.Errorf("repo: %w", UserNotExistError{})
 	}
 
 	if err != nil {

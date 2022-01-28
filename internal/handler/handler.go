@@ -25,6 +25,11 @@ func New(authHand AuthenticationHandler, reqHandler RequestHandler, downHandler 
 		logger: logger}
 }
 
+type ErrorWithStatus interface {
+	error
+	Status() int
+}
+
 type AuthenticationHandler interface {
 	Login(w http.ResponseWriter, r *http.Request)
 	Register(w http.ResponseWriter, r *http.Request)
