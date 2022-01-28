@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 var (
 	errRepository = errors.New("error in repository")
 	errStorage    = errors.New("error in storage")
+	errProc       = errors.New("error while processing")
 )
 
 func TestRequest_GetRequests(t *testing.T) {
@@ -180,88 +180,130 @@ func TestRequest_GetRequest(t *testing.T) {
 	}
 }
 
-func loadImage(t *testing.T, path string) []byte {
-	t.Helper()
-
-	b, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening an image", err)
-	}
-
-	return b
-}
-
 func TestRequest_AddReqeust(t *testing.T) {
-	pngTestImage := loadImage(t, "test_data/x.png")
-
+	pngTestImage := []byte{1, 2, 3, 4, 5}
+	url := "url"
 	testCases := []struct {
-		testName        string
-		userID          int
-		file            *bytes.Buffer
-		fileName        string
-		imageID         int
-		imageRepoErr    error
-		imageURL        string
-		storageErr      error
-		convInfo        model.ConversionInfo
-		runUploadFile   bool
-		runAddImage     bool
-		runAddRequest   bool
-		repoReqID       int
-		reqRepoErr      error
-		runProcessImage bool
-		wantReqID       int
-		wantErr         error
+		testName  string
+		userID    int
+		fileName  string
+		convInfo  model.ConversionInfo
+		configure func(*mocks.MockRequestRepo, *mocks.MockStorager, *mocks.MockImageProcesser)
+		wantReqID int
+		wantErr   error
 	}{
 		{
 			testName: "all is good",
 			userID:   123,
-			file:     bytes.NewBuffer(pngTestImage),
 			fileName: "filename.png",
 			convInfo: model.ConversionInfo{
 				Ratio: 0.5,
 				Type:  "png",
 			},
-			runUploadFile:   true,
-			runAddImage:     true,
-			runAddRequest:   true,
-			reqRepoErr:      nil,
-			repoReqID:       15,
-			runProcessImage: true,
-			wantReqID:       15,
-			wantErr:         nil,
+			configure: func(mrr *mocks.MockRequestRepo, ms *mocks.MockStorager, mip *mocks.MockImageProcesser) {
+				ctx := context.Background()
+				filename := "filename.png"
+				imageInfo := &model.ReuquestImageInfo{
+					URL:  url,
+					Type: "png",
+				}
+				reqRepoID := 15
+
+				ms.EXPECT().UploadFile(ctx, 123, filename, pngTestImage).Return(url, nil)
+				mrr.EXPECT().
+					AddImageAndRequest(ctx, 123, imageInfo, gomock.Any()).
+					Return(reqRepoID, nil)
+
+				infoToProc := &model.RequestToProcess{
+					ReqID:    reqRepoID,
+					FileName: filename,
+				}
+				mip.EXPECT().ProcessImage(ctx, infoToProc).Return(nil)
+			},
+			wantReqID: 15,
+			wantErr:   nil,
 		},
 		{
 			testName: "unknow file type",
 			userID:   123,
-			file:     bytes.NewBuffer(pngTestImage),
 			fileName: "filename.webm",
 			convInfo: model.ConversionInfo{
 				Ratio: 0.5,
 				Type:  "png",
 			},
-			reqRepoErr: nil,
-			repoReqID:  15,
-			wantReqID:  0,
-			wantErr:    &service.UnsupportedTypeError{"webm"},
+			configure: func(mrr *mocks.MockRequestRepo, ms *mocks.MockStorager, mip *mocks.MockImageProcesser) {},
+			wantReqID: 0,
+			wantErr:   service.UnsupportedTypeError{"webm"},
 		},
 		{
 			testName: "storage error",
 			userID:   123,
-			file:     bytes.NewBuffer(pngTestImage),
 			fileName: "filename.png",
 			convInfo: model.ConversionInfo{
 				Ratio: 0.5,
 				Type:  "png",
 			},
-			storageErr:    errStorage,
-			runUploadFile: true,
-			reqRepoErr:    nil,
-			repoReqID:     15,
-			wantReqID:     0,
-			wantErr:       errStorage,
+			configure: func(mrr *mocks.MockRequestRepo, ms *mocks.MockStorager, mip *mocks.MockImageProcesser) {
+				ms.EXPECT().UploadFile(context.Background(), 123, "filename.png", pngTestImage).Return("", errStorage)
+			},
+			wantReqID: 0,
+			wantErr:   errStorage,
+		},
+		{
+			testName: "repo error",
+			userID:   123,
+			fileName: "filename.png",
+			convInfo: model.ConversionInfo{
+				Ratio: 0.5,
+				Type:  "png",
+			},
+			configure: func(mrr *mocks.MockRequestRepo, ms *mocks.MockStorager, mip *mocks.MockImageProcesser) {
+				ctx := context.Background()
+				ms.EXPECT().UploadFile(context.Background(), 123, "filename.png", pngTestImage).Return(url, nil)
+				imageInfo := &model.ReuquestImageInfo{
+					URL:  url,
+					Type: "png",
+				}
+				mrr.EXPECT().
+					AddImageAndRequest(ctx, 123, imageInfo, gomock.Any()).
+					Return(0, errRepository)
+			},
+			wantReqID: 0,
+			wantErr:   errRepository,
+		},
+		{
+			testName: "process error",
+			userID:   123,
+			fileName: "filename.png",
+			convInfo: model.ConversionInfo{
+				Ratio: 0.5,
+				Type:  "png",
+			},
+			configure: func(mrr *mocks.MockRequestRepo, ms *mocks.MockStorager, mip *mocks.MockImageProcesser) {
+				ctx := context.Background()
+				filename := "filename.png"
+				imageInfo := &model.ReuquestImageInfo{
+					URL:  url,
+					Type: "png",
+				}
+				reqRepoID := 15
+
+				ms.EXPECT().UploadFile(ctx, 123, filename, pngTestImage).Return(url, nil)
+				mrr.EXPECT().
+					AddImageAndRequest(ctx, 123, imageInfo, gomock.Any()).
+					Return(reqRepoID, nil)
+
+				infoToProc := &model.RequestToProcess{
+					ReqID:    reqRepoID,
+					FileName: filename,
+				}
+				mip.EXPECT().ProcessImage(ctx, infoToProc).Return(errProc)
+			},
+			wantReqID: 0,
+			wantErr:   errProc,
 		},
 	}
+
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			mockCtr := gomock.NewController(t)
@@ -270,24 +312,12 @@ func TestRequest_AddReqeust(t *testing.T) {
 			mockStorage := mocks.NewMockStorager(mockCtr)
 			mockProcess := mocks.NewMockImageProcesser(mockCtr)
 
+			tc.configure(mockRequest, mockStorage, mockProcess)
+
 			srvc := service.NewRequest(mockRequest, mockStorage, mockProcess)
 			ctx := context.Background()
 
-			if tc.runUploadFile {
-				mockStorage.EXPECT().UploadFile(ctx, tc.userID, tc.fileName, tc.file.Bytes()).Return(tc.imageURL, tc.storageErr)
-			}
-
-			if tc.runAddImage {
-				mockRequest.EXPECT().
-					AddImageAndRequest(ctx, tc.userID, gomock.Any(), gomock.Any()).
-					Return(tc.repoReqID, tc.imageRepoErr)
-			}
-
-			if tc.runProcessImage {
-				mockProcess.EXPECT().ProcessImage(ctx, gomock.Any())
-			}
-
-			gotReqID, gotErr := srvc.AddRequest(ctx, tc.userID, tc.file,
+			gotReqID, gotErr := srvc.AddRequest(ctx, tc.userID, bytes.NewBuffer(pngTestImage),
 				tc.fileName, tc.convInfo)
 
 			assert.ErrorIs(t, gotErr, tc.wantErr)
@@ -298,13 +328,13 @@ func TestRequest_AddReqeust(t *testing.T) {
 
 func TestRequest_DeleteReqeust(t *testing.T) {
 	testCases := []struct {
-		testName string
-		userID   int
-		reqID    int
-		url1     string
-		url2     string
-		initMock func(*mocks.MockRequestRepo, *mocks.MockStorager, int, int, string, string)
-		wantErr  error
+		testName  string
+		userID    int
+		reqID     int
+		url1      string
+		url2      string
+		configure func(*mocks.MockRequestRepo, *mocks.MockStorager, int, int, string, string)
+		wantErr   error
 	}{
 		{
 			testName: "all is good",
@@ -312,7 +342,7 @@ func TestRequest_DeleteReqeust(t *testing.T) {
 			reqID:    2,
 			url1:     "first image url",
 			url2:     "second image url",
-			initMock: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
+			configure: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
 				mRep.EXPECT().DeleteRequestAndImage(gomock.Any(), userID, reqID).Return(url1, url2, nil)
 				mStor.EXPECT().DeleteFile(gomock.Any(), url1).Return(nil)
 				mStor.EXPECT().DeleteFile(gomock.Any(), url2).Return(nil)
@@ -325,7 +355,7 @@ func TestRequest_DeleteReqeust(t *testing.T) {
 			reqID:    2,
 			url1:     "",
 			url2:     "",
-			initMock: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
+			configure: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
 				mRep.EXPECT().DeleteRequestAndImage(gomock.Any(), userID, reqID).Return(url1, url2, errRepository)
 			},
 			wantErr: errRepository,
@@ -336,7 +366,7 @@ func TestRequest_DeleteReqeust(t *testing.T) {
 			reqID:    2,
 			url1:     "first image url",
 			url2:     "second image url",
-			initMock: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
+			configure: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
 				mRep.EXPECT().DeleteRequestAndImage(gomock.Any(), userID, reqID).Return(url1, url2, nil)
 				mStor.EXPECT().DeleteFile(gomock.Any(), url1).Return(errStorage)
 			},
@@ -348,7 +378,7 @@ func TestRequest_DeleteReqeust(t *testing.T) {
 			reqID:    2,
 			url1:     "first image id",
 			url2:     "",
-			initMock: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
+			configure: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
 				mRep.EXPECT().DeleteRequestAndImage(gomock.Any(), userID, reqID).Return(url1, url2, nil)
 				mStor.EXPECT().DeleteFile(gomock.Any(), url1).Return(nil)
 			},
@@ -360,7 +390,7 @@ func TestRequest_DeleteReqeust(t *testing.T) {
 			reqID:    2,
 			url1:     "first image url",
 			url2:     "second image url",
-			initMock: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
+			configure: func(mRep *mocks.MockRequestRepo, mStor *mocks.MockStorager, userID, reqID int, url1, url2 string) {
 				mRep.EXPECT().DeleteRequestAndImage(gomock.Any(), userID, reqID).Return(url1, url2, nil)
 				mStor.EXPECT().DeleteFile(gomock.Any(), url1).Return(nil)
 				mStor.EXPECT().DeleteFile(gomock.Any(), url2).Return(errStorage)
@@ -375,7 +405,7 @@ func TestRequest_DeleteReqeust(t *testing.T) {
 			mockRequest := mocks.NewMockRequestRepo(mockCtr)
 			mockStorage := mocks.NewMockStorager(mockCtr)
 
-			tc.initMock(mockRequest, mockStorage, tc.userID, tc.reqID, tc.url1, tc.url2)
+			tc.configure(mockRequest, mockStorage, tc.userID, tc.reqID, tc.url1, tc.url2)
 
 			srvc := service.NewRequest(mockRequest, mockStorage, &mocks.MockImageProcesser{})
 			ctx := context.Background()

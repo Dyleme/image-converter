@@ -56,8 +56,14 @@ var loginCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		defer resp.Body.Close()
 
 		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		_, err = getToken(b)
 		if err != nil {
 			return err
 		}

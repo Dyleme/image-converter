@@ -127,6 +127,7 @@ func Receive(ctx context.Context, conv Converter, conf *Config) error {
 	}
 
 	logger.Info("start conversion server")
+	logger.Info("start receiving")
 
 loop:
 	for {
@@ -139,6 +140,7 @@ loop:
 			err := json.Unmarshal(d.Body, &data)
 			if err != nil {
 				logger.Warn("Umarshaling error")
+				continue
 			}
 
 			convBegin := time.Now()
@@ -146,6 +148,7 @@ loop:
 			err = conv.Convert(logging.WithLogger(context.TODO(), logger), data.ReqID, data.FileName)
 			if err != nil {
 				logger.Warnf("receive: %s", err)
+				continue
 			}
 
 			logger.WithField("time for conversion", time.Since(convBegin)).

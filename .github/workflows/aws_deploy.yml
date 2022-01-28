@@ -14,9 +14,9 @@ env:
   HANDLER_IMAGE: dyleme/handler
   CONV_IMAGE: dyleme/converter
 
-  ECS_HANDLER_SERVICE: service-handler
-  ECS_CONV_SERVICE: service-convert
-  ECS_CLUSTER: image-converter-dziauho
+  ECS_HANDLER_SERVICE: dziauho-converter-service
+  ECS_CONV_SERVICE: dziauho-converter-conv-service 
+  ECS_CLUSTER: dziauho-image-converter
 
   ECS_HANDLER_TASK_DEFINITION: .aws/handler-task-definition.json 
   ECS_CONV_TASK_DEFINITION: .aws/conv-task-definition.json 
@@ -25,6 +25,27 @@ env:
   CONV_CONTAINER_NAME: image-converter-convert
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      run: make test.full
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v2.5.2
+      with:
+        version: latest
+        skip-go-installation: true
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
@@ -33,7 +54,7 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-
+      
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
@@ -54,6 +75,8 @@ jobs:
         file: ./Dockerfile.app
         push: true
         tags: dyleme/handler:latest
+        cache-from: type=registry, ref=dyleme/app:latest
+        cache-to: type=inline
 
     - name: Build and push Docker converter image
       uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
@@ -62,6 +85,8 @@ jobs:
         file: ./Dockerfile.conv
         push: true
         tags: dyleme/converter:latest
+        cache-from: type=registry, ref=dyleme/converter:latest
+        cache-to: type=inline
 
     - name: Fill in the new handler image ID in the Amazon ECS task definition
       id: handler-task-def

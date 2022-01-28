@@ -3,7 +3,6 @@ package service
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -38,15 +37,6 @@ type UnsupportedTypeError struct {
 
 func (e UnsupportedTypeError) Error() string {
 	return fmt.Sprintf("unsupported type: %q", e.UnType)
-}
-
-func (e UnsupportedTypeError) Is(target error) bool {
-	u := &UnsupportedTypeError{}
-	if errors.As(target, &u) {
-		return u.UnType == e.UnType
-	}
-
-	return false
 }
 
 // decodeImage decodes image from the r.
@@ -87,4 +77,9 @@ func encodeImage(i image.Image, imgType string) ([]byte, error) {
 	}
 
 	return bf.Bytes(), nil
+}
+
+// Resizer is an interface, which provide method to resize image.
+type Resizer interface {
+	Resize(im image.Image, ratio float32) image.Image
 }

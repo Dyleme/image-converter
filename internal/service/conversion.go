@@ -7,11 +7,11 @@ import (
 	"image"
 	"time"
 
-	"github.com/Dyleme/image-coverter/internal/conversion"
 	"github.com/Dyleme/image-coverter/internal/model"
 	"github.com/Dyleme/image-coverter/internal/repository"
 )
 
+// ConvertRepo is an interface which provides methods to implement with the reposistory.
 type ConvertRepo interface {
 	GetConvInfo(ctx context.Context, reqID int) (*model.ConvImageInfo, error)
 	SetImageResolution(ctx context.Context, imID int, width int, height int) error
@@ -19,15 +19,20 @@ type ConvertRepo interface {
 		width, height int, status string, t time.Time) error
 }
 
+// ConvertRequest is a struct provides the ability to convert image.
 type ConvertRequest struct {
 	repo    ConvertRepo
 	storage Storager
+	resizer Resizer
 }
 
-func NewConvertRequest(repo ConvertRepo, stor Storager) *ConvertRequest {
-	return &ConvertRequest{repo: repo, storage: stor}
+// NewConvertRequest is a constructor to ConvertRequest.
+func NewConvertRequest(repo ConvertRepo, stor Storager, resizer Resizer) *ConvertRequest {
+	return &ConvertRequest{repo: repo, storage: stor, resizer: resizer}
 }
 
+// Convert is a method to get request from database, image from S3
+// convert image and put it all back.
 func (c *ConvertRequest) Convert(ctx context.Context, reqID int, filename string) error {
 	info, err := c.repo.GetConvInfo(ctx, reqID)
 	if err != nil {
@@ -47,7 +52,7 @@ func (c *ConvertRequest) Convert(ctx context.Context, reqID int, filename string
 	}
 
 	if info.Ratio != 1 {
-		img = conversion.Resize(img, info.Ratio)
+		img = c.resizer.Resize(img, info.Ratio)
 	}
 
 	bts, err := encodeImage(img, info.NewType)

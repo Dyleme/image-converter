@@ -25,7 +25,11 @@ test.short:
 test.full: test.short test.integration
 
 .PHONY: test.integration
-test.integration: docker.start integration.test docker.stop
+test.integration: 
+	docker compose -f docker-compose.integration.yml up -d --remove-orphans;
+	$(ENV_LOCAL_TEST) \
+	$(GOTEST) -tags=integration $(INTEGRATION_TEST_PATH) -count=1
+	docker compose -f docker-compose.integration.yml down;
 
 .PHONY: docker.start
 docker.start:

@@ -2,6 +2,8 @@ package repository_test
 
 import (
 	"database/sql"
+	"log"
+	"time"
 
 	"github.com/Dyleme/image-coverter/internal/repository"
 	migrate "github.com/golang-migrate/migrate/v4"
@@ -25,14 +27,29 @@ type PostgresSuit struct {
 func (p *PostgresSuit) SetupSuite() {
 	var err error
 
-	p.DBConn, err = repository.NewPostgresDB(&p.conf)
-	if err != nil {
-		panic(err)
-	}
+	timeout := 5 * time.Second
+	timeoutExceeded := time.After(timeout)
 
-	p.Migration, err = runMigration(p.DBConn,
-		"./migration")
-	require.NoError(p.T(), err)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timeoutExceeded:
+			p.T().Error("connecton timeout")
+		case <-ticker.C:
+			p.DBConn, err = repository.NewPostgresDB(&p.conf)
+			if err != nil {
+				log.Println("failed to connect to database")
+			}
+
+			p.Migration, err = runMigration(p.DBConn,
+				"./migration")
+			require.NoError(p.T(), err)
+
+			return
+		}
+	}
 }
 
 func (p *PostgresSuit) TearDownSuite() {

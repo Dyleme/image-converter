@@ -64,7 +64,7 @@ func (s *Server) serve(ctx context.Context, port string, handler http.Handler) e
 		}
 	}()
 
-	logger.Info("server start")
+	logger.Info("handler server start")
 
 	select {
 	case err := <-servError:

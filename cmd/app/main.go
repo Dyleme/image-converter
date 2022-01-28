@@ -4,7 +4,6 @@ import (
 	"context"
 
 	_ "github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 
 	"github.com/Dyleme/image-coverter/internal/config"
 	"github.com/Dyleme/image-coverter/internal/handler"
@@ -18,9 +17,9 @@ import (
 )
 
 func main() {
-	logger := logging.NewLogger(logrus.InfoLevel)
-
 	conf, err := config.InitConfig()
+	logger := logging.NewLogger(conf.LogLevel)
+
 	if err != nil {
 		logger.Fatalf("wrong config: %s", err)
 	}

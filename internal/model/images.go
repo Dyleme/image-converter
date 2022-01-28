@@ -15,6 +15,7 @@ type ReuquestImageInfo struct {
 	URL  string
 }
 
+// ConvImageInfo is a struct with request info to get from ConvRepo.
 type ConvImageInfo struct {
 	UserID  int
 	OldImID int
